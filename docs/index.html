@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>あかちゃん だいすき！ぽんぽんワールド - 生後5ヶ月からの感覚あそびアプリ</title>
+  <meta name="description" content="生後5ヶ月頃の赤ちゃんが指や手でタップして音・光・かわいい動物と遊べる、高コントラスト＆マルチタッチ対応の感覚あそび・知育Webアプリ。">
+  <meta name="theme-color" content="#FF85A2">
+
+  <!-- iOS / iPad Safari Fullscreen Meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ぽんぽんワールド">
+
+  <!-- Google Fonts: Zen Maru Gothic for cute baby rounded text -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <script type="module" crossorigin src="./assets/index-CysPRJEQ.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-C7hyEIsH.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Start Splash Screen for iOS Web Audio Unlock -->
+    <div id="start-overlay" class="overlay active">
+      <div class="start-card">
+        <div class="start-icon-pulse">
+          <svg class="baby-face-svg" viewBox="0 0 120 120" width="120" height="120">
+            <circle cx="60" cy="60" r="55" fill="#FFE066" stroke="#FF9F1C" stroke-width="6"/>
+            <!-- Eyes -->
+            <circle cx="40" cy="50" r="7" fill="#2B2D42"/>
+            <circle cx="80" cy="50" r="7" fill="#2B2D42"/>
+            <circle cx="42" cy="48" r="2.5" fill="#FFFFFF"/>
+            <circle cx="82" cy="48" r="2.5" fill="#FFFFFF"/>
+            <!-- Cheeks -->
+            <circle cx="30" cy="65" r="10" fill="#FF85A2" opacity="0.6"/>
+            <circle cx="90" cy="65" r="10" fill="#FF85A2" opacity="0.6"/>
+            <!-- Smile -->
+            <path d="M 40 70 Q 60 90 80 70" fill="none" stroke="#2B2D42" stroke-width="6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1 class="start-title">あかちゃん だいすき！<br><span class="highlight">ぽんぽんワールド</span></h1>
+        <p class="start-sub">画面をぽん！とタッチしてね 🎵</p>
+        <button id="start-btn" class="glow-btn" aria-label="あそびをはじめる">
+          <span>あそぶ！</span>
+        </button>
+        <div class="ipad-hint">💡 iPad・タブレット推奨 (マルチタッチ対応)</div>
+      </div>
+    </div>
+
+    <!-- Main Game Canvas Container -->
+    <div id="game-container">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Parent Top Control Bar -->
+      <header id="parent-bar" class="parent-bar">
+        <!-- Mode Switcher Tabs -->
+        <nav class="mode-tabs" id="mode-tabs" aria-label="あそびモード選択">
+          <button class="mode-tab active" data-mode="bubble" title="ぽんぽんポップ">
+            <span class="tab-icon">🎈</span>
+            <span class="tab-label">ぽんぽん</span>
+          </button>
+          <button class="mode-tab" data-mode="peekaboo" title="いないいないばぁ">
+            <span class="tab-icon">🙈</span>
+            <span class="tab-label">いないいない</span>
+          </button>
+          <button class="mode-tab" data-mode="rattle" title="ふしぎなガラガラ">
+            <span class="tab-icon">🔔</span>
+            <span class="tab-label">ガラガラ</span>
+          </button>
+          <button class="mode-tab" data-mode="lullaby" title="おやすみオルゴール">
+            <span class="tab-icon">🌙</span>
+            <span class="tab-label">おやすみ</span>
+          </button>
+        </nav>
+
+        <!-- Right Utility Group (Parent Lock & Sound) -->
+        <div class="util-group">
+          <button id="sound-toggle-btn" class="icon-btn" aria-label="音のオンオフ">
+            <span id="sound-icon">🔊</span>
+          </button>
+          <button id="parent-lock-btn" class="icon-btn lock-btn" aria-label="保護者ロック">
+            <span id="lock-icon">🔓</span>
+            <span class="lock-hint">3秒長押し</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Parent Lock Overlay Modal -->
+      <div id="lock-overlay" class="overlay hidden">
+        <div class="lock-modal">
+          <h2>🔒 パパ・ママ専用メニュー</h2>
+          <p class="lock-desc">ロック中です。モード切替や設定を変更できます。</p>
+          <div class="lock-controls">
+            <button id="unlock-btn" class="glow-btn small">あそびに戻る</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast Feedback for Touch & Lock -->
+      <div id="toast-msg" class="toast hidden"></div>
+    </div>
+  </div>
+
+</body>
+</html>

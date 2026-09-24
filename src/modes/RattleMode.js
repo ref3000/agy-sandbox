@@ -1,5 +1,5 @@
 /* ==========================================================================
-   あそびモード 3: ふしぎなガラガラ (Magical Rattle & High Contrast Shapes)
+   あそびモード 3: ふしぎなガラガラ (Magical Rattle & High Contrast Shapes) - Optimized
    ========================================================================== */
 
 export class RattleMode {
@@ -37,11 +37,11 @@ export class RattleMode {
         x, y,
         baseX: x,
         baseY: y,
-        radius: 65 + Math.random() * 20,
+        radius: 60 + Math.random() * 15,
         rotation: 0,
         rotSpeed: 0.02 * (i % 2 === 0 ? 1 : -1),
         wobble: 0,
-        colorType: i % 4, // 0: Red/Black/White, 1: Yellow/Black, 2: Rainbow, 3: High Contrast Bullseye
+        colorType: i % 4,
         type: i
       });
     }
@@ -76,16 +76,18 @@ export class RattleMode {
   }
 
   render(ctx) {
-    // High contrast visual elements
-    this.rattles.forEach(r => {
+    const now = Date.now();
+    for (let i = 0; i < this.rattles.length; i++) {
+      const r = this.rattles[i];
+      const wobbleX = r.x + Math.sin(now * 0.01) * r.wobble * 15;
+      const rad = r.radius * (1 + Math.sin(now * 0.008) * r.wobble * 0.15);
+
       ctx.save();
-      ctx.translate(r.x + Math.sin(Date.now() * 0.01) * r.wobble * 20, r.y);
+      ctx.translate(wobbleX, r.y);
       ctx.rotate(r.rotation);
 
-      const rad = r.radius * (1 + Math.sin(Date.now() * 0.008) * r.wobble * 0.2);
-
       if (r.colorType === 0) {
-        // High Contrast Black & Red Bullseye (Infant Favorite)
+        // High Contrast Black & Red Bullseye
         ctx.beginPath();
         ctx.arc(0, 0, rad, 0, Math.PI * 2);
         ctx.fillStyle = '#E63946';
@@ -101,7 +103,6 @@ export class RattleMode {
         ctx.fillStyle = '#FFFFFF';
         ctx.fill();
 
-        // Center Smiley
         ctx.font = `${rad * 0.4}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -113,23 +114,23 @@ export class RattleMode {
         ctx.arc(0, 0, rad, 0, Math.PI * 2);
         ctx.fillStyle = '#FFC72C';
         ctx.fill();
-        ctx.lineWidth = 8;
+        ctx.lineWidth = 6;
         ctx.strokeStyle = '#1E293B';
         ctx.stroke();
 
-        ctx.font = `${rad * 0.9}px sans-serif`;
+        ctx.font = `${rad * 0.85}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('🔔', 0, 0);
 
       } else if (r.colorType === 2) {
-        // High Contrast Checker Pattern
+        // High Contrast Blue Rattle
         ctx.beginPath();
         ctx.arc(0, 0, rad, 0, Math.PI * 2);
         ctx.fillStyle = '#38BDF8';
         ctx.fill();
 
-        ctx.font = `${rad * 0.9}px sans-serif`;
+        ctx.font = `${rad * 0.85}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('🌀', 0, 0);
@@ -141,14 +142,14 @@ export class RattleMode {
         ctx.fillStyle = '#FF6584';
         ctx.fill();
 
-        ctx.font = `${rad * 0.9}px sans-serif`;
+        ctx.font = `${rad * 0.85}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('🌟', 0, 0);
       }
 
       ctx.restore();
-    });
+    }
   }
 
   destroy() {

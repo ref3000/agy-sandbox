@@ -1,5 +1,5 @@
 /* ==========================================================================
-   あそびモード 2: いないいないばぁ！ (Peek-a-Boo Animals)
+   あそびモード 2: いないいないばぁ！ (Peek-a-Boo Animals) - Optimized for iPad
    ========================================================================== */
 
 export class PeekABooMode {
@@ -68,15 +68,15 @@ export class PeekABooMode {
     if (a.isRevealed) return;
 
     a.isRevealed = true;
-    a.animOffset = -25; // bounce up animation
+    a.animOffset = -25;
 
-    // Play Peek-a-Boo chime + animal voice
     this.soundSynth.playPeekABoo();
     setTimeout(() => {
-      this.soundSynth.playAnimalSound(a.sound);
+      if (this.soundSynth) {
+        this.soundSynth.playAnimalSound(a.sound);
+      }
     }, 250);
 
-    // Auto cover back after 3.2 seconds
     if (a.timer) clearTimeout(a.timer);
     a.timer = setTimeout(() => {
       a.isRevealed = false;
@@ -93,46 +93,39 @@ export class PeekABooMode {
   }
 
   render(ctx) {
-    this.animals.forEach(a => {
-      ctx.save();
-      ctx.translate(a.x, a.y + a.animOffset);
+    for (let i = 0; i < this.animals.length; i++) {
+      const a = this.animals[i];
+      const renderY = a.y + a.animOffset;
 
-      // Background glowing pod
+      // Background pod
       ctx.beginPath();
-      ctx.arc(0, 0, a.size * 1.1, 0, Math.PI * 2);
+      ctx.arc(a.x, renderY, a.size * 1.1, 0, Math.PI * 2);
       ctx.fillStyle = a.color + '22';
       ctx.fill();
 
       if (a.isRevealed) {
-        // Revealed Face ("ばあー！")
         ctx.font = `${a.size * 1.3}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(a.emoji, 0, 0);
+        ctx.fillText(a.emoji, a.x, renderY);
 
-        // "ばぁ！" Text Pill
         ctx.font = 'bold 24px "Zen Maru Gothic", sans-serif';
         ctx.fillStyle = '#FF6584';
-        ctx.fillText('ばぁ！✨', 0, -a.size * 0.95);
+        ctx.fillText('ばぁ！✨', a.x, renderY - a.size * 0.95);
       } else {
-        // Hiding Cover ("いないいない...")
         ctx.font = `${a.size * 1.1}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(a.cover, 0, 0);
+        ctx.fillText(a.cover, a.x, renderY);
 
-        // Peek hands overlay
         ctx.font = `${a.size * 0.7}px sans-serif`;
-        ctx.fillText('🙈', 0, 5);
+        ctx.fillText('🙈', a.x, renderY + 5);
 
-        // "いないいない..." Text
         ctx.font = 'bold 20px "Zen Maru Gothic", sans-serif';
         ctx.fillStyle = '#64748B';
-        ctx.fillText('タップしてね♪', 0, a.size * 0.95);
+        ctx.fillText('タップしてね♪', a.x, renderY + a.size * 0.95);
       }
-
-      ctx.restore();
-    });
+    }
   }
 
   destroy() {

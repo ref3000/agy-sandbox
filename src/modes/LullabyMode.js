@@ -1,5 +1,5 @@
 /* ==========================================================================
-   あそびモード 4: おやすみオルゴール (Lullaby Music Box & Calm Night Sky)
+   あそびモード 4: おやすみオルゴール (Lullaby Music Box & Calm Night Sky) - Optimized
    ========================================================================== */
 
 export class LullabyMode {
@@ -17,7 +17,6 @@ export class LullabyMode {
     this.soundSynth = soundSynth;
     this.setupStars();
 
-    // Start automatic Music Box lullaby
     this.soundSynth.startLullaby();
   }
 
@@ -29,12 +28,12 @@ export class LullabyMode {
 
   setupStars() {
     this.stars = [];
-    const count = 40;
+    const count = 30; // 30 twinkling stars
     for (let i = 0; i < count; i++) {
       this.stars.push({
         x: Math.random() * this.width,
         y: Math.random() * this.height,
-        size: 2 + Math.random() * 4,
+        size: 2 + Math.random() * 3,
         alpha: Math.random(),
         speed: 0.01 + Math.random() * 0.02
       });
@@ -42,7 +41,11 @@ export class LullabyMode {
   }
 
   onTouch(x, y) {
-    // Spawn shooting star on touch
+    // Limit shooting stars to max 10
+    if (this.shootingStars.length > 10) {
+      this.shootingStars.shift();
+    }
+
     this.shootingStars.push({
       x, y,
       vx: (Math.random() - 0.5) * 8,
@@ -51,12 +54,10 @@ export class LullabyMode {
       size: 24
     });
 
-    // Play soft chime
     this.soundSynth.playOrgelNote(523.25 + Math.random() * 300);
   }
 
   update() {
-    // Twinkle stars
     this.stars.forEach(s => {
       s.alpha += s.speed;
       if (s.alpha > 1 || s.alpha < 0.2) {
@@ -64,12 +65,11 @@ export class LullabyMode {
       }
     });
 
-    // Update shooting stars
     for (let i = this.shootingStars.length - 1; i >= 0; i--) {
       const s = this.shootingStars[i];
       s.x += s.vx;
       s.y += s.vy;
-      s.alpha -= 0.02;
+      s.alpha -= 0.025;
       if (s.alpha <= 0) {
         this.shootingStars.splice(i, 1);
       }
@@ -77,7 +77,7 @@ export class LullabyMode {
   }
 
   render(ctx, width, height) {
-    // Dark Night Sky Gradient
+    // Background Night Sky Gradient
     const grad = ctx.createLinearGradient(0, 0, 0, height);
     grad.addColorStop(0, '#0F172A');
     grad.addColorStop(0.5, '#1E1B4B');
@@ -85,35 +85,40 @@ export class LullabyMode {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
-    // Glowing Crescent Moon
-    ctx.save();
+    // Glowing Crescent Moon Halo (Without heavy shadowBlur)
+    const moonX = width * 0.8;
+    const moonY = height * 0.25;
+    const moonRadius = Math.min(width, height) * 0.12;
+
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonRadius * 1.4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 224, 102, 0.15)';
+    ctx.fill();
+
     ctx.font = `${Math.min(width, height) * 0.22}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#FFE066';
-    ctx.shadowBlur = 25;
-    ctx.fillText('🌙', width * 0.8, height * 0.25);
-    ctx.restore();
+    ctx.fillText('🌙', moonX, moonY);
 
     // Render Twinkling Stars
-    this.stars.forEach(s => {
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, s.alpha);
+    for (let i = 0; i < this.stars.length; i++) {
+      const s = this.stars[i];
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
       ctx.fillStyle = '#FFFFFF';
+      ctx.globalAlpha = Math.max(0, s.alpha);
       ctx.fill();
-      ctx.restore();
-    });
+    }
 
     // Render Shooting Stars
-    this.shootingStars.forEach(s => {
-      ctx.save();
+    for (let i = 0; i < this.shootingStars.length; i++) {
+      const s = this.shootingStars[i];
       ctx.globalAlpha = Math.max(0, s.alpha);
       ctx.font = `${s.size}px sans-serif`;
       ctx.fillText('✨', s.x, s.y);
-      ctx.restore();
-    });
+    }
+
+    ctx.globalAlpha = 1.0;
   }
 
   destroy() {

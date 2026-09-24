@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Web Audio API Sound Synthesizer for Baby Joy World
+   Web Audio API Sound Synthesizer for Baby Joy World (Optimized for iPad)
    ========================================================================== */
 
 class SoundSynthesizer {
@@ -7,6 +7,10 @@ class SoundSynthesizer {
     this.ctx = null;
     this.isMuted = false;
     this.isUnlocked = false;
+
+    this.lastTouchTime = 0;
+    this.lastPopTime = 0;
+    this.lastRattleTime = 0;
 
     // C Major Pentatonic Scale frequencies (Hz) for harmonious tapping
     this.pentatonicNotes = [
@@ -23,7 +27,7 @@ class SoundSynthesizer {
       1046.50 // C6
     ];
 
-    // Lullaby Melody notes & durations (Twinkle Twinkle Little Star / Brahm's Lullaby style)
+    // Lullaby Melody notes & durations
     this.lullabyNotes = [
       { note: 261.63, dur: 0.8 }, { note: 261.63, dur: 0.8 },
       { note: 392.00, dur: 0.8 }, { note: 392.00, dur: 0.8 },
@@ -78,48 +82,34 @@ class SoundSynthesizer {
   }
 
   /**
-   * Play a pleasant Pentatonic Marimba / Glockenspiel note based on touch location
+   * Play a pleasant Pentatonic Marimba note based on touch location
    */
   playTouchTone(pitchIndex = -1) {
     if (this.isMuted || !this.ctx) return;
 
     const now = this.ctx.currentTime;
+    if (now - this.lastTouchTime < 0.04) return; // 40ms audio throttle
+    this.lastTouchTime = now;
+
     const freq = pitchIndex >= 0 
       ? this.pentatonicNotes[pitchIndex % this.pentatonicNotes.length]
       : this.pentatonicNotes[Math.floor(Math.random() * this.pentatonicNotes.length)];
 
-    // Primary Sine Oscillator
+    // Single Sine Oscillator for maximum efficiency
     const osc = this.ctx.createOscillator();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now);
 
-    // Harmonic Overtone Oscillator for Glockenspiel sparkle
-    const osc2 = this.ctx.createOscillator();
-    osc2.type = 'triangle';
-    osc2.frequency.setValueAtTime(freq * 2, now);
-
     const gain = this.ctx.createGain();
-    const gain2 = this.ctx.createGain();
-
-    // Envelope: Fast attack, soft exponential decay
     gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.35, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-
-    gain2.gain.setValueAtTime(0.001, now);
-    gain2.gain.linearRampToValueAtTime(0.12, now + 0.01);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    gain.gain.linearRampToValueAtTime(0.3, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
 
     osc.connect(gain);
-    osc2.connect(gain2);
-
     gain.connect(this.ctx.destination);
-    gain2.connect(this.ctx.destination);
 
     osc.start(now);
-    osc2.start(now);
-    osc.stop(now + 0.85);
-    osc2.stop(now + 0.45);
+    osc.stop(now + 0.55);
   }
 
   /**
@@ -129,15 +119,17 @@ class SoundSynthesizer {
     if (this.isMuted || !this.ctx) return;
 
     const now = this.ctx.currentTime;
+    if (now - this.lastPopTime < 0.03) return; // 30ms throttle
+    this.lastPopTime = now;
+
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    // Pitch drops rapidly from 550Hz to 120Hz
     osc.type = 'sine';
     osc.frequency.setValueAtTime(550, now);
     osc.frequency.exponentialRampToValueAtTime(120, now + 0.07);
 
-    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.setValueAtTime(0.35, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 
     osc.connect(gain);
@@ -155,7 +147,7 @@ class SoundSynthesizer {
 
     const chords = [392.00, 523.25, 659.25, 783.99]; // G4, C5, E5, G5
     chords.forEach((freq, idx) => {
-      const now = this.ctx.currentTime + idx * 0.09;
+      const now = this.ctx.currentTime + idx * 0.08;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
@@ -163,14 +155,14 @@ class SoundSynthesizer {
       osc.frequency.setValueAtTime(freq, now);
 
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.3, now + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      gain.gain.linearRampToValueAtTime(0.25, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
       osc.start(now);
-      osc.stop(now + 0.65);
+      osc.stop(now + 0.55);
     });
   }
 
@@ -181,7 +173,10 @@ class SoundSynthesizer {
     if (this.isMuted || !this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const bufferSize = this.ctx.sampleRate * 0.06; // 60ms noise
+    if (now - this.lastRattleTime < 0.06) return; // 60ms throttle
+    this.lastRattleTime = now;
+
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.04); // 40ms noise
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < bufferSize; i++) {
@@ -191,15 +186,14 @@ class SoundSynthesizer {
     const noise = this.ctx.createBufferSource();
     noise.buffer = buffer;
 
-    // Filter noise to sound like plastic beads
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(3200 + Math.random() * 600, now);
-    filter.Q.value = 3;
+    filter.frequency.setValueAtTime(3000 + Math.random() * 500, now);
+    filter.Q.value = 2;
 
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
 
     noise.connect(filter);
     filter.connect(gain);
@@ -209,62 +203,55 @@ class SoundSynthesizer {
   }
 
   /**
-   * Synthesize cute animal sound effects (Chick, Cat, Dog, Bear)
+   * Synthesize cute animal sound effects
    */
   playAnimalSound(animalType) {
     if (this.isMuted || !this.ctx) return;
 
     const now = this.ctx.currentTime;
     if (animalType === 'chick') {
-      // High bird chirp (ぴよぴよ)
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(2200, now);
       osc.frequency.exponentialRampToValueAtTime(2800, now + 0.08);
-      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.setValueAtTime(0.25, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
       osc.start(now);
       osc.stop(now + 0.1);
     } else if (animalType === 'cat') {
-      // Meow (にゃー)
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(600, now);
       osc.frequency.linearRampToValueAtTime(900, now + 0.15);
-      osc.frequency.linearRampToValueAtTime(700, now + 0.35);
+      osc.frequency.linearRampToValueAtTime(700, now + 0.3);
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      gain.gain.linearRampToValueAtTime(0.25, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.35);
+      osc.stop(now + 0.3);
     } else if (animalType === 'dog') {
-      // Bark (わん！)
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(450, now);
       osc.frequency.exponentialRampToValueAtTime(200, now + 0.12);
-      gain.gain.setValueAtTime(0.4, now);
+      gain.gain.setValueAtTime(0.3, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
       osc.start(now);
       osc.stop(now + 0.12);
     } else {
-      // Default cute bounce sound
       this.playTouchTone(6);
     }
   }
 
-  /**
-   * Start automatic Music Box (Orgel) Lullaby
-   */
   startLullaby() {
     this.stopLullaby();
     if (this.isMuted || !this.ctx) return;
@@ -292,14 +279,14 @@ class SoundSynthesizer {
     osc.frequency.setValueAtTime(freq, now);
 
     gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 1.85);
+    osc.stop(now + 1.25);
   }
 
   stopLullaby() {

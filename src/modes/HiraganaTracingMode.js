@@ -26,15 +26,14 @@ export class HiraganaTracingMode {
     this.boxX = 0;
     this.boxY = 0;
 
-    // Offscreen Canvas for Font Mask & User Traced Path
     this.maskCanvas = document.createElement('canvas');
     this.maskCtx = this.maskCanvas.getContext('2d', { willReadFrequently: true });
 
     this.traceCanvas = document.createElement('canvas');
     this.traceCtx = this.traceCanvas.getContext('2d');
 
-    this.fontPixelsCount = 0;
     this.tracedRatio = 0;
+    this.hitStartPts = new Set();
     this.isCompleted = false;
     this.celebrationParticles = [];
 
@@ -74,25 +73,18 @@ export class HiraganaTracingMode {
     this.isCompleted = false;
     this.celebrationParticles = [];
     this.tracedRatio = 0;
+    this.hitStartPts.clear();
     this.lastTouchPt = null;
 
     const currentChar = this.charList[this.charIndex];
 
-    // 1. Generate Font Silhouette Mask in Offscreen Canvas
+    // 1. Generate Font Silhouette Mask
     this.maskCtx.clearRect(0, 0, this.boxSize, this.boxSize);
     this.maskCtx.font = `900 ${this.boxSize * 0.72}px "Zen Maru Gothic", -apple-system, sans-serif`;
     this.maskCtx.textAlign = 'center';
     this.maskCtx.textBaseline = 'middle';
     this.maskCtx.fillStyle = '#000000';
     this.maskCtx.fillText(currentChar.char, this.boxSize / 2, this.boxSize / 2 + 10);
-
-    // Count font silhouette non-transparent pixels
-    const imgData = this.maskCtx.getImageData(0, 0, this.boxSize, this.boxSize);
-    let count = 0;
-    for (let i = 3; i < imgData.data.length; i += 4) {
-      if (imgData.data[i] > 30) count++;
-    }
-    this.fontPixelsCount = count || 1;
 
     // 2. Clear User Trace Canvas
     this.traceCtx.clearRect(0, 0, this.boxSize, this.boxSize);
@@ -145,9 +137,9 @@ export class HiraganaTracingMode {
       return;
     }
 
-    const brushRadius = Math.max(24, this.boxSize * 0.08);
+    // Natural pen width (15px radius)
+    const brushRadius = Math.max(14, this.boxSize * 0.045);
 
-    // Draw vibrant brush on traceCtx
     this.traceCtx.save();
     this.traceCtx.lineCap = 'round';
     this.traceCtx.lineJoin = 'round';
@@ -170,7 +162,22 @@ export class HiraganaTracingMode {
     this.lastTouchPt = { x, y };
     this.colorIdx++;
 
-    // Calculate Traced Coverage Ratio
+    // Track Start Points Hit
+    const currentChar = this.charList[this.charIndex];
+    if (currentChar.startPts) {
+      currentChar.startPts.forEach(pt => {
+        const px = pt.x * this.boxSize;
+        const py = pt.y * this.boxSize;
+        if (Math.hypot(x - px, y - py) < 32) {
+          if (!this.hitStartPts.has(pt.n)) {
+            this.hitStartPts.add(pt.n);
+            this.soundSynth.playStrokeSuccess();
+          }
+        }
+      });
+    }
+
+    // Calculate Traced Coverage Ratio accurately
     this.checkCoverage();
   }
 
@@ -178,19 +185,27 @@ export class HiraganaTracingMode {
     const maskData = this.maskCtx.getImageData(0, 0, this.boxSize, this.boxSize).data;
     const traceData = this.traceCtx.getImageData(0, 0, this.boxSize, this.boxSize).data;
 
-    let covered = 0;
-    // Check overlap of trace pixels on font silhouette pixels
-    for (let i = 3; i < maskData.length; i += 16) { // Step by 16 for performance
-      if (maskData[i] > 30 && traceData[i] > 30) {
-        covered++;
+    let fontPixelCount = 0;
+    let coveredCount = 0;
+
+    // Sample every 4th pixel (step 16 in RGBA)
+    for (let i = 3; i < maskData.length; i += 16) {
+      if (maskData[i] > 30) {
+        fontPixelCount++;
+        if (traceData[i] > 30) {
+          coveredCount++;
+        }
       }
     }
 
-    const totalSampled = Math.ceil(this.fontPixelsCount / 4);
-    this.tracedRatio = covered / totalSampled;
+    this.tracedRatio = fontPixelCount > 0 ? coveredCount / fontPixelCount : 0;
 
-    // If 75%+ of font silhouette is painted/traced, trigger completion!
-    if (this.tracedRatio > 0.75 && !this.isCompleted) {
+    const currentChar = this.charList[this.charIndex];
+    const totalRequiredStartPts = currentChar.startPts ? currentChar.startPts.length : 0;
+    const allStartPtsHit = this.hitStartPts.size >= totalRequiredStartPts;
+
+    // Require 86%+ font coverage AND touching all stroke start numbers (①, ②, ③)
+    if (this.tracedRatio >= 0.86 && allStartPtsHit && !this.isCompleted) {
       this.triggerCompletion();
     }
   }
@@ -199,7 +214,7 @@ export class HiraganaTracingMode {
     this.isCompleted = true;
     this.soundSynth.playCompleteFanfare();
 
-    // Fill entire font mask nicely upon completion
+    // Fill entire font mask upon completion
     this.traceCtx.save();
     this.traceCtx.globalCompositeOperation = 'source-over';
     this.traceCtx.fillStyle = '#FF6584';
@@ -271,7 +286,7 @@ export class HiraganaTracingMode {
     ctx.fillStyle = '#1E293B';
     ctx.fillText(`${currentChar.char} - ${currentChar.word} ${currentChar.icon}`, this.width / 2, this.boxY - 35);
 
-    // 3. Render Base Font Silhouette (Soft Dotted Pink/Gray Template)
+    // 3. Render Base Font Silhouette Template
     ctx.save();
     ctx.font = `900 ${this.boxSize * 0.72}px "Zen Maru Gothic", -apple-system, sans-serif`;
     ctx.textAlign = 'center';
@@ -280,21 +295,17 @@ export class HiraganaTracingMode {
     ctx.fillText(currentChar.char, this.boxX + this.boxSize / 2, this.boxY + this.boxSize / 2 + 10);
     ctx.restore();
 
-    // 4. Render User Traced Color (Clipped Exactly to the Font Silhouette!)
+    // 4. Render User Traced Color (Clipped Exactly to Font Silhouette)
     ctx.save();
-    // Composite traced user paint onto offscreen mask
     const renderCompCanvas = document.createElement('canvas');
     renderCompCanvas.width = this.boxSize;
     renderCompCanvas.height = this.boxSize;
     const compCtx = renderCompCanvas.getContext('2d');
 
-    // Draw user traced colors
     compCtx.drawImage(this.traceCanvas, 0, 0);
-    // Clip to font silhouette!
     compCtx.globalCompositeOperation = 'destination-in';
     compCtx.drawImage(this.maskCanvas, 0, 0);
 
-    // Draw clipped rainbow traced font onto main canvas
     ctx.drawImage(renderCompCanvas, this.boxX, this.boxY);
     ctx.restore();
 
@@ -303,10 +314,11 @@ export class HiraganaTracingMode {
       currentChar.startPts.forEach(pt => {
         const px = this.boxX + pt.x * this.boxSize;
         const py = this.boxY + pt.y * this.boxSize;
+        const isHit = this.hitStartPts.has(pt.n);
 
         ctx.beginPath();
         ctx.arc(px, py, 18, 0, Math.PI * 2);
-        ctx.fillStyle = '#FF9F1C';
+        ctx.fillStyle = isHit ? '#06D6A0' : '#FF9F1C';
         ctx.fill();
         ctx.lineWidth = 2.5;
         ctx.strokeStyle = '#FFFFFF';
@@ -316,11 +328,20 @@ export class HiraganaTracingMode {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(`${pt.n}`, px, py);
+        ctx.fillText(isHit ? '✓' : `${pt.n}`, px, py);
       });
     }
 
-    // 6. Navigation Controls (◀ ▶ 🔄)
+    // 6. Progress Bar / Percentage Display
+    if (!this.isCompleted) {
+      const progressPercent = Math.min(100, Math.floor(this.tracedRatio * 100));
+      ctx.font = '700 14px "Zen Maru Gothic", sans-serif';
+      ctx.fillStyle = '#94A3B8';
+      ctx.textAlign = 'center';
+      ctx.fillText(`なぞったよ: ${progressPercent}%`, this.boxX + this.boxSize / 2, this.boxY + this.boxSize - 15);
+    }
+
+    // 7. Navigation Controls (◀ ▶ 🔄)
     const prevBtn = { x: 50, y: this.height / 2, r: 35 };
     const nextBtn = { x: this.width - 50, y: this.height / 2, r: 35 };
 
@@ -364,7 +385,7 @@ export class HiraganaTracingMode {
     ctx.fillStyle = '#64748B';
     ctx.fillText('🔄 もういちど', resetBtn.x, resetBtn.y);
 
-    // 7. Celebration Screen on Completion
+    // 8. Celebration Screen on Completion
     if (this.isCompleted) {
       ctx.save();
       ctx.font = '900 44px "Zen Maru Gothic", sans-serif';

@@ -8,25 +8,27 @@ export class PrefecturePuzzleMode {
     this.width = 0;
     this.height = 0;
 
+    this.mapImage = new Image();
+    this.mapImage.src = './japan_map.png';
+
     this.activePiece = null;
     this.dragOffsetX = 0;
     this.dragOffsetY = 0;
     this.effects = [];
-    this.completionTimer = null;
     this.isCompleted = false;
 
-    // Prefectures Dataset with simplified geometric paths & local specialties
+    // Relative coordinates mapped against the uploaded Japan map image
     this.prefecturesMaster = [
       {
         id: 'hokkaido',
         name: 'ほっかいどう',
         color: '#FF9F1C',
         badge: '🍈',
-        targetRelX: 0.72,
-        targetRelY: 0.22,
-        w: 120, h: 100,
+        mapRelX: 0.78,
+        mapRelY: 0.17,
+        w: 90, h: 70,
         path: [
-          [-50, -40], [40, -45], [55, 10], [10, 45], [-45, 30]
+          [-40, -30], [35, -35], [45, 10], [5, 35], [-35, 20]
         ]
       },
       {
@@ -34,11 +36,11 @@ export class PrefecturePuzzleMode {
         name: 'とうきょう',
         color: '#FF477E',
         badge: '🗼',
-        targetRelX: 0.55,
-        targetRelY: 0.48,
-        w: 80, h: 65,
+        mapRelX: 0.65,
+        mapRelY: 0.52,
+        w: 75, h: 55,
         path: [
-          [-35, -20], [35, -25], [30, 20], [-30, 25]
+          [-30, -18], [30, -20], [25, 18], [-25, 20]
         ]
       },
       {
@@ -46,11 +48,11 @@ export class PrefecturePuzzleMode {
         name: 'あいち',
         color: '#FFD166',
         badge: '🏯',
-        targetRelX: 0.46,
-        targetRelY: 0.53,
-        w: 75, h: 60,
+        mapRelX: 0.55,
+        mapRelY: 0.60,
+        w: 70, h: 55,
         path: [
-          [-30, -20], [30, -20], [25, 20], [-25, 25]
+          [-25, -18], [25, -18], [20, 18], [-20, 20]
         ]
       },
       {
@@ -58,11 +60,11 @@ export class PrefecturePuzzleMode {
         name: 'おおさか',
         color: '#38BDF8',
         badge: '🐙',
-        targetRelX: 0.38,
-        targetRelY: 0.55,
-        w: 70, h: 65,
+        mapRelX: 0.44,
+        mapRelY: 0.67,
+        w: 65, h: 55,
         path: [
-          [-25, -25], [25, -20], [20, 25], [-20, 20]
+          [-22, -20], [22, -18], [18, 20], [-18, 18]
         ]
       },
       {
@@ -70,11 +72,11 @@ export class PrefecturePuzzleMode {
         name: 'きょうと',
         color: '#A855F7',
         badge: '⛩️',
-        targetRelX: 0.36,
-        targetRelY: 0.46,
-        w: 65, h: 70,
+        mapRelX: 0.45,
+        mapRelY: 0.58,
+        w: 60, h: 60,
         path: [
-          [-20, -30], [25, -25], [20, 30], [-25, 25]
+          [-18, -25], [20, -20], [18, 25], [-20, 20]
         ]
       },
       {
@@ -82,11 +84,11 @@ export class PrefecturePuzzleMode {
         name: 'ふくおか',
         color: '#2ED573',
         badge: '🍜',
-        targetRelX: 0.18,
-        targetRelY: 0.60,
-        w: 75, h: 60,
+        mapRelX: 0.20,
+        mapRelY: 0.79,
+        w: 68, h: 55,
         path: [
-          [-30, -20], [30, -25], [25, 20], [-25, 20]
+          [-25, -18], [25, -20], [20, 18], [-20, 18]
         ]
       },
       {
@@ -94,11 +96,11 @@ export class PrefecturePuzzleMode {
         name: 'おきなわ',
         color: '#00D2D3',
         badge: '🌺',
-        targetRelX: 0.12,
-        targetRelY: 0.80,
-        w: 65, h: 55,
+        mapRelX: 0.18,
+        mapRelY: 0.22,
+        w: 60, h: 50,
         path: [
-          [-25, -15], [25, -20], [20, 15], [-20, 20]
+          [-22, -14], [22, -18], [18, 14], [-18, 16]
         ]
       }
     ];
@@ -119,16 +121,20 @@ export class PrefecturePuzzleMode {
     this.effects = [];
     this.activePiece = null;
 
+    const mapSize = Math.min(this.width * 0.65, this.height * 0.68);
+    const mapX = this.width / 2 - mapSize / 2;
+    const mapY = this.height / 2 - mapSize / 2 + 10;
+
     // Clone pieces & assign initial floating tray positions
     this.pieces = this.prefecturesMaster.map((pref, idx) => {
-      const targetX = pref.targetRelX * this.width;
-      const targetY = pref.targetRelY * this.height;
+      const targetX = mapX + pref.mapRelX * mapSize;
+      const targetY = mapY + pref.mapRelY * mapSize;
 
       // Spawn in tray area at bottom
-      const trayMargin = 60;
+      const trayMargin = 50;
       const trayWidth = Math.max(200, this.width - trayMargin * 2);
-      const pieceX = trayMargin + (idx / Math.max(1, this.prefecturesMaster.length - 1)) * (trayWidth - 60) + (Math.random() * 20 - 10);
-      const pieceY = this.height - 75 + (idx % 2 === 0 ? -15 : 15);
+      const pieceX = trayMargin + (idx / Math.max(1, this.prefecturesMaster.length - 1)) * (trayWidth - 50);
+      const pieceY = this.height - 70 + (idx % 2 === 0 ? -12 : 12);
 
       return {
         ...pref,
@@ -146,8 +152,13 @@ export class PrefecturePuzzleMode {
     this.width = width;
     this.height = height;
 
+    const mapSize = Math.min(this.width * 0.65, this.height * 0.68);
+    const mapX = this.width / 2 - mapSize / 2;
+    const mapY = this.height / 2 - mapSize / 2 + 10;
+
     this.pieces.forEach(p => {
-      p.targetX = p.targetRelX * this.width;
+      p.targetX = mapX + p.mapRelX * mapSize;
+      p.targetY = mapY + p.mapRelY * mapSize;
       if (p.isFitted) {
         p.x = p.targetX;
         p.y = p.targetY;
@@ -169,7 +180,7 @@ export class PrefecturePuzzleMode {
       const p = this.pieces[i];
       if (!p.isFitted) {
         const dist = Math.hypot(x - p.x, y - p.y);
-        if (dist < 55) {
+        if (dist < 50) {
           this.activePiece = p;
           this.dragOffsetX = x - p.x;
           this.dragOffsetY = y - p.y;
@@ -199,7 +210,7 @@ export class PrefecturePuzzleMode {
       // Check snap to target location
       const distToTarget = Math.hypot(p.x - p.targetX, p.y - p.targetY);
 
-      if (distToTarget < 65) {
+      if (distToTarget < 60) {
         // Snap!
         p.x = p.targetX;
         p.y = p.targetY;
@@ -287,7 +298,19 @@ export class PrefecturePuzzleMode {
       ctx.stroke();
     }
 
-    // 2. Draw Target Outlines (Silhouette Map Slots)
+    // 2. Render Uploaded Japan Map Image as Background Base
+    const mapSize = Math.min(this.width * 0.65, this.height * 0.68);
+    const mapX = this.width / 2 - mapSize / 2;
+    const mapY = this.height / 2 - mapSize / 2 + 10;
+
+    if (this.mapImage.complete && this.mapImage.naturalWidth > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.drawImage(this.mapImage, mapX, mapY, mapSize, mapSize);
+      ctx.restore();
+    }
+
+    // 3. Draw Target Outlines (Silhouette Map Slots)
     this.pieces.forEach(p => {
       ctx.save();
       ctx.translate(p.targetX, p.targetY);
@@ -300,27 +323,27 @@ export class PrefecturePuzzleMode {
       ctx.closePath();
 
       // Target Silhouette Slot
-      ctx.fillStyle = p.isFitted ? 'rgba(255, 255, 255, 0.4)' : 'rgba(203, 213, 225, 0.6)';
+      ctx.fillStyle = p.isFitted ? 'rgba(255, 255, 255, 0.45)' : 'rgba(203, 213, 225, 0.65)';
       ctx.fill();
-      ctx.setLineDash([5, 5]);
-      ctx.lineWidth = 2.5;
-      ctx.strokeStyle = '#64748B';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#475569';
       ctx.stroke();
       ctx.setLineDash([]);
 
       // Label inside silhouette target
       if (!p.isFitted) {
-        ctx.font = '700 13px "Zen Maru Gothic", sans-serif';
+        ctx.font = '700 12px "Zen Maru Gothic", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#475569';
+        ctx.fillStyle = '#334155';
         ctx.fillText(p.name, 0, 0);
       }
 
       ctx.restore();
     });
 
-    // 3. Draw Prefecture Puzzle Pieces
+    // 4. Draw Prefecture Puzzle Pieces
     this.pieces.forEach(p => {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -347,19 +370,19 @@ export class PrefecturePuzzleMode {
       }
 
       // Name & Specialty Badge inside fitted piece
-      ctx.font = '700 14px "Zen Maru Gothic", sans-serif';
+      ctx.font = '700 13px "Zen Maru Gothic", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(p.name, 0, -8);
+      ctx.fillText(p.name, 0, -6);
 
-      ctx.font = '18px sans-serif';
-      ctx.fillText(p.badge, 0, 12);
+      ctx.font = '16px sans-serif';
+      ctx.fillText(p.badge, 0, 10);
 
       ctx.restore();
     });
 
-    // 4. Render Top Pill Status & Reset Button
+    // 5. Render Top Pill Status & Reset Button
     const fittedCount = this.pieces.filter(p => p.isFitted).length;
     const pillW = 250;
     const pillH = 40;
@@ -409,7 +432,7 @@ export class PrefecturePuzzleMode {
       ctx.restore();
     }
 
-    // 5. Celebration Effects
+    // 6. Celebration Effects
     for (let i = 0; i < this.effects.length; i++) {
       const e = this.effects[i];
       ctx.globalAlpha = Math.max(0, e.alpha);

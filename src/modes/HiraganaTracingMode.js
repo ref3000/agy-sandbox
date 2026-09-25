@@ -38,8 +38,17 @@ export class HiraganaTracingMode {
     this.celebrationParticles = [];
 
     this.lastTouchPt = null;
-    this.brushColors = ['#FF6584', '#FF9F1C', '#FFD166', '#06D6A0', '#118AB2', '#A855F7'];
-    this.colorIdx = 0;
+    
+    // Curated single color palette
+    this.palette = [
+      '#FF6584', // Coral Pink
+      '#FF9F1C', // Warm Orange
+      '#38BDF8', // Sky Blue
+      '#A855F7', // Soft Purple
+      '#06D6A0', // Mint Green
+      '#F43F5E'  // Rose Red
+    ];
+    this.currentColor = this.palette[0];
   }
 
   init(width, height, soundSynth) {
@@ -75,6 +84,9 @@ export class HiraganaTracingMode {
     this.tracedRatio = 0;
     this.hitStartPts.clear();
     this.lastTouchPt = null;
+
+    // Pick a single random color for this character session
+    this.currentColor = this.palette[Math.floor(Math.random() * this.palette.length)];
 
     const currentChar = this.charList[this.charIndex];
 
@@ -137,14 +149,13 @@ export class HiraganaTracingMode {
       return;
     }
 
-    // Natural pen width (15px radius)
     const brushRadius = Math.max(14, this.boxSize * 0.045);
 
     this.traceCtx.save();
     this.traceCtx.lineCap = 'round';
     this.traceCtx.lineJoin = 'round';
     this.traceCtx.lineWidth = brushRadius * 2;
-    this.traceCtx.strokeStyle = this.brushColors[this.colorIdx % this.brushColors.length];
+    this.traceCtx.strokeStyle = this.currentColor;
 
     if (this.lastTouchPt) {
       this.traceCtx.beginPath();
@@ -154,13 +165,12 @@ export class HiraganaTracingMode {
     } else {
       this.traceCtx.beginPath();
       this.traceCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
-      this.traceCtx.fillStyle = this.brushColors[this.colorIdx % this.brushColors.length];
+      this.traceCtx.fillStyle = this.currentColor;
       this.traceCtx.fill();
     }
     this.traceCtx.restore();
 
     this.lastTouchPt = { x, y };
-    this.colorIdx++;
 
     // Track Start Points Hit
     const currentChar = this.charList[this.charIndex];
@@ -177,7 +187,6 @@ export class HiraganaTracingMode {
       });
     }
 
-    // Calculate Traced Coverage Ratio accurately
     this.checkCoverage();
   }
 
@@ -188,7 +197,6 @@ export class HiraganaTracingMode {
     let fontPixelCount = 0;
     let coveredCount = 0;
 
-    // Sample every 4th pixel (step 16 in RGBA)
     for (let i = 3; i < maskData.length; i += 16) {
       if (maskData[i] > 30) {
         fontPixelCount++;
@@ -204,7 +212,6 @@ export class HiraganaTracingMode {
     const totalRequiredStartPts = currentChar.startPts ? currentChar.startPts.length : 0;
     const allStartPtsHit = this.hitStartPts.size >= totalRequiredStartPts;
 
-    // Require 86%+ font coverage AND touching all stroke start numbers (①, ②, ③)
     if (this.tracedRatio >= 0.86 && allStartPtsHit && !this.isCompleted) {
       this.triggerCompletion();
     }
@@ -214,14 +221,14 @@ export class HiraganaTracingMode {
     this.isCompleted = true;
     this.soundSynth.playCompleteFanfare();
 
-    // Fill entire font mask upon completion
+    // Fill entire font mask nicely upon completion
     this.traceCtx.save();
     this.traceCtx.globalCompositeOperation = 'source-over';
-    this.traceCtx.fillStyle = '#FF6584';
+    this.traceCtx.fillStyle = this.currentColor;
     this.traceCtx.fillRect(0, 0, this.boxSize, this.boxSize);
     this.traceCtx.restore();
 
-    // Celebration fireworks particles
+    // Celebration fireworks particles using current theme color
     this.celebrationParticles = [];
     for (let i = 0; i < 45; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -231,7 +238,7 @@ export class HiraganaTracingMode {
         y: this.boxY + this.boxSize / 2,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 2,
-        color: this.brushColors[Math.floor(Math.random() * this.brushColors.length)],
+        color: this.palette[Math.floor(Math.random() * this.palette.length)],
         size: 8 + Math.random() * 12,
         alpha: 1
       });
@@ -295,7 +302,7 @@ export class HiraganaTracingMode {
     ctx.fillText(currentChar.char, this.boxX + this.boxSize / 2, this.boxY + this.boxSize / 2 + 10);
     ctx.restore();
 
-    // 4. Render User Traced Color (Clipped Exactly to Font Silhouette)
+    // 4. Render User Traced Color (Single Beautiful Color)
     ctx.save();
     const renderCompCanvas = document.createElement('canvas');
     renderCompCanvas.width = this.boxSize;
@@ -391,7 +398,7 @@ export class HiraganaTracingMode {
       ctx.font = '900 44px "Zen Maru Gothic", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#FF6584';
+      ctx.fillStyle = this.currentColor;
       ctx.fillText('できたね！👏✨', this.width / 2, this.boxY + this.boxSize / 2);
       ctx.restore();
     }

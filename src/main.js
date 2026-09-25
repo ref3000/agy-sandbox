@@ -27,9 +27,9 @@ class BabyJoyApp {
     // Initialize Active Modes
     this.modes = {
       bubble: new BubblePopMode(),
+      tracing: new HiraganaTracingMode(),
       ehon: new EhonMode(),
-      prefecture: new PrefecturePuzzleMode(),
-      tracing: new HiraganaTracingMode()
+      prefecture: new PrefecturePuzzleMode()
     };
 
     this.bindDOMEvents();

@@ -67,9 +67,9 @@ export class HiraganaTracingMode {
   }
 
   updateBoxPos() {
-    this.boxSize = Math.min(this.width * 0.75, this.height * 0.60, 380);
+    this.boxSize = Math.min(this.width * 0.84, this.height * 0.68, 460);
     this.boxX = (this.width - this.boxSize) / 2;
-    this.boxY = (this.height - this.boxSize) / 2 + 10;
+    this.boxY = (this.height - this.boxSize) / 2 + 18;
 
     this.maskCanvas.width = this.boxSize;
     this.maskCanvas.height = this.boxSize;
@@ -92,11 +92,11 @@ export class HiraganaTracingMode {
 
     // 1. Generate Font Silhouette Mask
     this.maskCtx.clearRect(0, 0, this.boxSize, this.boxSize);
-    this.maskCtx.font = `900 ${this.boxSize * 0.72}px "Zen Maru Gothic", -apple-system, sans-serif`;
+    this.maskCtx.font = `900 ${this.boxSize * 0.85}px "Zen Maru Gothic", -apple-system, sans-serif`;
     this.maskCtx.textAlign = 'center';
     this.maskCtx.textBaseline = 'middle';
     this.maskCtx.fillStyle = '#000000';
-    this.maskCtx.fillText(currentChar.char, this.boxSize / 2, this.boxSize / 2 + 10);
+    this.maskCtx.fillText(currentChar.char, this.boxSize / 2, this.boxSize / 2 + 14);
 
     // 2. Clear User Trace Canvas
     this.traceCtx.clearRect(0, 0, this.boxSize, this.boxSize);
@@ -295,11 +295,11 @@ export class HiraganaTracingMode {
 
     // 3. Render Base Font Silhouette Template
     ctx.save();
-    ctx.font = `900 ${this.boxSize * 0.72}px "Zen Maru Gothic", -apple-system, sans-serif`;
+    ctx.font = `900 ${this.boxSize * 0.85}px "Zen Maru Gothic", -apple-system, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(255, 133, 162, 0.22)';
-    ctx.fillText(currentChar.char, this.boxX + this.boxSize / 2, this.boxY + this.boxSize / 2 + 10);
+    ctx.fillText(currentChar.char, this.boxX + this.boxSize / 2, this.boxY + this.boxSize / 2 + 14);
     ctx.restore();
 
     // 4. Render User Traced Color (Single Beautiful Color)

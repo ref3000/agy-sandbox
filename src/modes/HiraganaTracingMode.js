@@ -268,9 +268,7 @@ export class HiraganaTracingMode {
 
     const currentChar = this.charList[this.charIndex];
     if (currentChar && this.soundSynth && this.soundSynth.speakWord) {
-      setTimeout(() => {
-        this.soundSynth.speakWord(currentChar.char, currentChar.word);
-      }, 400);
+      this.soundSynth.speakWord(currentChar.char, currentChar.word);
     }
 
     this.traceCtx.save();

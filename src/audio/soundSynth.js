@@ -56,6 +56,16 @@ class SoundSynthesizer {
       if (this.ctx.state === 'suspended') {
         await this.ctx.resume();
       }
+      // Unlock Web Speech API on iOS / Mobile Safari
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const dummy = new SpeechSynthesisUtterance('');
+          dummy.lang = 'ja-JP';
+          window.speechSynthesis.speak(dummy);
+        } catch (e) {}
+      }
+
       // Play brief silent tone to unlock iOS audio engine
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -353,18 +363,32 @@ class SoundSynthesizer {
     try {
       window.speechSynthesis.cancel(); // cancel any active speech
 
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+
       const text = `${char}！ ${word}！`;
       const uttr = new SpeechSynthesisUtterance(text);
       uttr.lang = 'ja-JP';
-      uttr.rate = 0.82; // slightly slower for toddlers
+      uttr.rate = 0.80; // slightly slower for toddlers
       uttr.pitch = 1.25; // cute, friendly higher pitch
 
-      // Attempt to load Japanese voice
+      // CRITICAL FOR iOS SAFARI: Keep a reference on instance so GC doesn't destroy utterance
+      this.currentUtterance = uttr;
+
       const voices = window.speechSynthesis.getVoices();
       const jaVoice = voices.find(v => v.lang && (v.lang.includes('ja') || v.lang.includes('JP')));
       if (jaVoice) {
         uttr.voice = jaVoice;
       }
+
+      uttr.onend = () => {
+        this.currentUtterance = null;
+      };
+      uttr.onerror = (e) => {
+        console.warn('Utterance error:', e);
+        this.currentUtterance = null;
+      };
 
       window.speechSynthesis.speak(uttr);
     } catch (err) {

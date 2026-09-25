@@ -1,6 +1,8 @@
 /* ==========================================================================
-   あそびモード 7: 都道府県パズル (Japanese Prefectures Touch & Snap Puzzle)
+   あそびモード 7: 47都道府県パズル (All 47 Japanese Prefectures Puzzle)
    ========================================================================== */
+
+import { PREFECTURES } from '../data/prefecturesData.js';
 
 export class PrefecturePuzzleMode {
   constructor() {
@@ -9,7 +11,7 @@ export class PrefecturePuzzleMode {
     this.height = 0;
 
     this.mapImage = new Image();
-    this.mapImage.src = './japan_map.png';
+    this.mapImage.src = './japan_map.svg';
 
     this.activePiece = null;
     this.dragOffsetX = 0;
@@ -17,95 +19,10 @@ export class PrefecturePuzzleMode {
     this.effects = [];
     this.isCompleted = false;
 
-    // Relative coordinates mapped against the uploaded Japan map image
-    this.prefecturesMaster = [
-      {
-        id: 'hokkaido',
-        name: 'ほっかいどう',
-        color: '#FF9F1C',
-        badge: '🍈',
-        mapRelX: 0.78,
-        mapRelY: 0.17,
-        w: 90, h: 70,
-        path: [
-          [-40, -30], [35, -35], [45, 10], [5, 35], [-35, 20]
-        ]
-      },
-      {
-        id: 'tokyo',
-        name: 'とうきょう',
-        color: '#FF477E',
-        badge: '🗼',
-        mapRelX: 0.65,
-        mapRelY: 0.52,
-        w: 75, h: 55,
-        path: [
-          [-30, -18], [30, -20], [25, 18], [-25, 20]
-        ]
-      },
-      {
-        id: 'aichi',
-        name: 'あいち',
-        color: '#FFD166',
-        badge: '🏯',
-        mapRelX: 0.55,
-        mapRelY: 0.60,
-        w: 70, h: 55,
-        path: [
-          [-25, -18], [25, -18], [20, 18], [-20, 20]
-        ]
-      },
-      {
-        id: 'osaka',
-        name: 'おおさか',
-        color: '#38BDF8',
-        badge: '🐙',
-        mapRelX: 0.44,
-        mapRelY: 0.67,
-        w: 65, h: 55,
-        path: [
-          [-22, -20], [22, -18], [18, 20], [-18, 18]
-        ]
-      },
-      {
-        id: 'kyoto',
-        name: 'きょうと',
-        color: '#A855F7',
-        badge: '⛩️',
-        mapRelX: 0.45,
-        mapRelY: 0.58,
-        w: 60, h: 60,
-        path: [
-          [-18, -25], [20, -20], [18, 25], [-20, 20]
-        ]
-      },
-      {
-        id: 'fukuoka',
-        name: 'ふくおか',
-        color: '#2ED573',
-        badge: '🍜',
-        mapRelX: 0.20,
-        mapRelY: 0.79,
-        w: 68, h: 55,
-        path: [
-          [-25, -18], [25, -20], [20, 18], [-20, 18]
-        ]
-      },
-      {
-        id: 'okinawa',
-        name: 'おきなわ',
-        color: '#00D2D3',
-        badge: '🌺',
-        mapRelX: 0.18,
-        mapRelY: 0.22,
-        w: 60, h: 50,
-        path: [
-          [-22, -14], [22, -18], [18, 14], [-18, 16]
-        ]
-      }
-    ];
-
-    this.pieces = [];
+    this.allPrefectures = [];
+    this.trayPieces = [];
+    this.fittedPieces = [];
+    this.queue = [];
   }
 
   init(width, height, soundSynth) {
@@ -121,30 +38,54 @@ export class PrefecturePuzzleMode {
     this.effects = [];
     this.activePiece = null;
 
-    const mapSize = Math.min(this.width * 0.65, this.height * 0.68);
+    // Shuffle copy of 47 prefectures
+    const shuffled = [...PREFECTURES].sort(() => Math.random() - 0.5);
+
+    this.allPrefectures = shuffled.map(p => ({
+      ...p,
+      x: 0,
+      y: 0,
+      targetX: 0,
+      targetY: 0,
+      isFitted: false,
+      scale: 1.0
+    }));
+
+    this.fittedPieces = [];
+    // Take first 6 for tray
+    this.trayPieces = this.allPrefectures.slice(0, 6);
+    this.queue = this.allPrefectures.slice(6);
+
+    this.updateTargetPositions();
+    this.layoutTrayPieces();
+  }
+
+  updateTargetPositions() {
+    const mapSize = Math.min(this.width * 0.72, this.height * 0.75);
     const mapX = this.width / 2 - mapSize / 2;
     const mapY = this.height / 2 - mapSize / 2 + 10;
 
-    // Clone pieces & assign initial floating tray positions
-    this.pieces = this.prefecturesMaster.map((pref, idx) => {
-      const targetX = mapX + pref.mapRelX * mapSize;
-      const targetY = mapY + pref.mapRelY * mapSize;
+    this.allPrefectures.forEach(p => {
+      p.targetX = mapX + p.relX * mapSize;
+      p.targetY = mapY + p.relY * mapSize;
+      if (p.isFitted) {
+        p.x = p.targetX;
+        p.y = p.targetY;
+      }
+    });
+  }
 
-      // Spawn in tray area at bottom
-      const trayMargin = 50;
-      const trayWidth = Math.max(200, this.width - trayMargin * 2);
-      const pieceX = trayMargin + (idx / Math.max(1, this.prefecturesMaster.length - 1)) * (trayWidth - 50);
-      const pieceY = this.height - 70 + (idx % 2 === 0 ? -12 : 12);
+  layoutTrayPieces() {
+    const trayMargin = 50;
+    const trayWidth = Math.max(200, this.width - trayMargin * 2);
+    const count = this.trayPieces.length;
 
-      return {
-        ...pref,
-        targetX,
-        targetY,
-        x: pieceX,
-        y: pieceY,
-        isFitted: false,
-        scale: 1.0
-      };
+    this.trayPieces.forEach((p, idx) => {
+      if (!p.isFitted) {
+        const step = count > 1 ? trayWidth / (count - 1) : 0;
+        p.x = trayMargin + idx * step + (Math.random() * 10 - 5);
+        p.y = this.height - 65 + (idx % 2 === 0 ? -12 : 12);
+      }
     });
   }
 
@@ -152,18 +93,8 @@ export class PrefecturePuzzleMode {
     this.width = width;
     this.height = height;
 
-    const mapSize = Math.min(this.width * 0.65, this.height * 0.68);
-    const mapX = this.width / 2 - mapSize / 2;
-    const mapY = this.height / 2 - mapSize / 2 + 10;
-
-    this.pieces.forEach(p => {
-      p.targetX = mapX + p.mapRelX * mapSize;
-      p.targetY = mapY + p.mapRelY * mapSize;
-      if (p.isFitted) {
-        p.x = p.targetX;
-        p.y = p.targetY;
-      }
-    });
+    this.updateTargetPositions();
+    this.layoutTrayPieces();
   }
 
   onTouch(x, y) {
@@ -175,20 +106,20 @@ export class PrefecturePuzzleMode {
       return;
     }
 
-    // Pick top-most unfitted piece
-    for (let i = this.pieces.length - 1; i >= 0; i--) {
-      const p = this.pieces[i];
+    // Pick top-most unfitted tray piece
+    for (let i = this.trayPieces.length - 1; i >= 0; i--) {
+      const p = this.trayPieces[i];
       if (!p.isFitted) {
         const dist = Math.hypot(x - p.x, y - p.y);
-        if (dist < 50) {
+        if (dist < 45) {
           this.activePiece = p;
           this.dragOffsetX = x - p.x;
           this.dragOffsetY = y - p.y;
-          p.scale = 1.25;
+          p.scale = 1.3;
           if (this.soundSynth) this.soundSynth.playPop();
-          // Move picked piece to end of array for top z-index
-          this.pieces.splice(i, 1);
-          this.pieces.push(p);
+          // Move to end of tray array for top z-index
+          this.trayPieces.splice(i, 1);
+          this.trayPieces.push(p);
           break;
         }
       }
@@ -210,15 +141,28 @@ export class PrefecturePuzzleMode {
       // Check snap to target location
       const distToTarget = Math.hypot(p.x - p.targetX, p.y - p.targetY);
 
-      if (distToTarget < 60) {
+      if (distToTarget < 55) {
         // Snap!
         p.x = p.targetX;
         p.y = p.targetY;
         p.isFitted = true;
 
-        if (this.soundSynth) this.soundSynth.playPeekABoo();
+        if (this.soundSynth) this.soundSynth.playPop();
         this.speakPrefecture(p.name);
         this.spawnCelebration(p.x, p.y, [p.badge, '✨', '⭐', '🎉']);
+
+        // Remove from tray & add next piece from queue
+        const idx = this.trayPieces.indexOf(p);
+        if (idx !== -1) {
+          this.trayPieces.splice(idx, 1);
+          this.fittedPieces.push(p);
+        }
+
+        if (this.queue.length > 0) {
+          const nextPiece = this.queue.shift();
+          this.trayPieces.push(nextPiece);
+          this.layoutTrayPieces();
+        }
 
         this.checkCompletion();
       }
@@ -241,24 +185,23 @@ export class PrefecturePuzzleMode {
   }
 
   checkCompletion() {
-    const allFitted = this.pieces.every(p => p.isFitted);
-    if (allFitted && !this.isCompleted) {
+    if (this.fittedPieces.length >= 47 && !this.isCompleted) {
       this.isCompleted = true;
-      setTimeout(() => this.speakPrefecture('ぜんぶかんせい！すごいね！'), 500);
-      this.spawnCelebration(this.width / 2, this.height / 2, ['🎉', '👑', '✨', '💖', '🍈', '🗼', '🐙']);
+      setTimeout(() => this.speakPrefecture('47とどうふけん ぜんぶかんせい！すごいね！'), 500);
+      this.spawnCelebration(this.width / 2, this.height / 2, ['🎉', '👑', '✨', '💖', '🍈', '🗼', '🐙', '🌸']);
     }
   }
 
   spawnCelebration(x, y, symbols) {
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 10; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 3 + Math.random() * 5;
+      const speed = 2.5 + Math.random() * 4.5;
       this.effects.push({
         x, y,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1.5,
+        vy: Math.sin(angle) * speed - 1.2,
         symbol: symbols[Math.floor(Math.random() * symbols.length)],
-        size: 22 + Math.random() * 16,
+        size: 20 + Math.random() * 14,
         alpha: 1
       });
     }
@@ -288,7 +231,7 @@ export class PrefecturePuzzleMode {
     ctx.fillStyle = '#E0F2FE';
     ctx.fillRect(0, 0, this.width, this.height);
 
-    // Subtle Map Grid Waves
+    // Grid waves
     ctx.strokeStyle = '#BAE6FD';
     ctx.lineWidth = 1.5;
     for (let y = 0; y < this.height; y += 40) {
@@ -298,64 +241,55 @@ export class PrefecturePuzzleMode {
       ctx.stroke();
     }
 
-    // 2. Render Uploaded Japan Map Image as Background Base
-    const mapSize = Math.min(this.width * 0.65, this.height * 0.68);
+    // 2. Render Full 47 Prefectures SVG Map as Background Base
+    const mapSize = Math.min(this.width * 0.72, this.height * 0.75);
     const mapX = this.width / 2 - mapSize / 2;
     const mapY = this.height / 2 - mapSize / 2 + 10;
 
     if (this.mapImage.complete && this.mapImage.naturalWidth > 0) {
       ctx.save();
-      ctx.globalAlpha = 0.85;
+      ctx.globalAlpha = 0.88;
       ctx.drawImage(this.mapImage, mapX, mapY, mapSize, mapSize);
       ctx.restore();
     }
 
-    // 3. Draw Target Outlines (Silhouette Map Slots)
-    this.pieces.forEach(p => {
+    // 3. Draw Fitted Pieces on Map
+    this.fittedPieces.forEach(p => {
       ctx.save();
       ctx.translate(p.targetX, p.targetY);
 
+      // Fitted Pill Pin
       ctx.beginPath();
-      p.path.forEach((pt, idx) => {
-        if (idx === 0) ctx.moveTo(pt[0], pt[1]);
-        else ctx.lineTo(pt[0], pt[1]);
-      });
-      ctx.closePath();
-
-      // Target Silhouette Slot
-      ctx.fillStyle = p.isFitted ? 'rgba(255, 255, 255, 0.45)' : 'rgba(203, 213, 225, 0.65)';
+      ctx.roundRect(-30, -18, 60, 36, 18);
+      ctx.fillStyle = p.color;
       ctx.fill();
-      ctx.setLineDash([4, 4]);
       ctx.lineWidth = 2;
-      ctx.strokeStyle = '#475569';
+      ctx.strokeStyle = '#FFFFFF';
       ctx.stroke();
-      ctx.setLineDash([]);
 
-      // Label inside silhouette target
-      if (!p.isFitted) {
-        ctx.font = '700 12px "Zen Maru Gothic", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#334155';
-        ctx.fillText(p.name, 0, 0);
-      }
+      ctx.font = '700 12px "Zen Maru Gothic", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(p.kanji, 0, -5);
+
+      ctx.font = '13px sans-serif';
+      ctx.fillText(p.badge, 0, 9);
 
       ctx.restore();
     });
 
-    // 4. Draw Prefecture Puzzle Pieces
-    this.pieces.forEach(p => {
+    // 4. Draw Floating Tray Pieces at Bottom
+    this.trayPieces.forEach(p => {
+      if (p.isFitted) return;
+
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.scale(p.scale, p.scale);
 
+      // Piece Card
       ctx.beginPath();
-      p.path.forEach((pt, idx) => {
-        if (idx === 0) ctx.moveTo(pt[0], pt[1]);
-        else ctx.lineTo(pt[0], pt[1]);
-      });
-      ctx.closePath();
-
+      ctx.roundRect(-34, -22, 68, 44, 20);
       ctx.fillStyle = p.color;
       ctx.fill();
       ctx.lineWidth = 3;
@@ -364,26 +298,24 @@ export class PrefecturePuzzleMode {
 
       // Shadow when dragging
       if (this.activePiece === p) {
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-        ctx.shadowBlur = 12;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+        ctx.shadowBlur = 14;
         ctx.shadowOffsetY = 6;
       }
 
-      // Name & Specialty Badge inside fitted piece
       ctx.font = '700 13px "Zen Maru Gothic", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(p.name, 0, -6);
+      ctx.fillText(p.name, 0, -7);
 
-      ctx.font = '16px sans-serif';
+      ctx.font = '15px sans-serif';
       ctx.fillText(p.badge, 0, 10);
 
       ctx.restore();
     });
 
     // 5. Render Top Pill Status & Reset Button
-    const fittedCount = this.pieces.filter(p => p.isFitted).length;
     const pillW = 250;
     const pillH = 40;
     const pillX = this.width / 2 - pillW / 2;
@@ -401,7 +333,7 @@ export class PrefecturePuzzleMode {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#1E293B';
-    ctx.fillText(`🗾 とどうふけん (${fittedCount}/${this.pieces.length})`, this.width / 2, pillY + pillH / 2);
+    ctx.fillText(`🗾 とどうふけん (${this.fittedPieces.length}/47)`, this.width / 2, pillY + pillH / 2);
 
     // Reset Button (Top Right)
     const resetX = this.width - 70;
@@ -421,14 +353,14 @@ export class PrefecturePuzzleMode {
     // Completion Banner
     if (this.isCompleted) {
       ctx.save();
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
       ctx.fillRect(0, this.height / 2 - 50, this.width, 100);
 
       ctx.font = '900 32px "Zen Maru Gothic", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#FF477E';
-      ctx.fillText('🎉 ぜんぶかんせい！ すごいね！ 🎉', this.width / 2, this.height / 2);
+      ctx.fillText('🎉 47とどうふけん ぜんぶかんせい！ 🎉', this.width / 2, this.height / 2);
       ctx.restore();
     }
 
@@ -446,7 +378,9 @@ export class PrefecturePuzzleMode {
   }
 
   destroy() {
-    this.pieces = [];
+    this.allPrefectures = [];
+    this.trayPieces = [];
+    this.fittedPieces = [];
     this.effects = [];
   }
 }

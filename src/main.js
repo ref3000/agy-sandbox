@@ -8,8 +8,6 @@ import { BubblePopMode } from './modes/BubblePopMode.js';
 import { EhonMode } from './modes/EhonMode.js';
 import { PrefecturePuzzleMode } from './modes/PrefecturePuzzleMode.js';
 import { HiraganaTracingMode } from './modes/HiraganaTracingMode.js';
-import { PeekABooMode } from './modes/PeekABooMode.js';
-import { RattleMode } from './modes/RattleMode.js';
 
 class BabyJoyApp {
   constructor() {
@@ -26,14 +24,12 @@ class BabyJoyApp {
     const canvas = document.getElementById('game-canvas');
     this.canvasEngine = new CanvasEngine(canvas, soundSynth);
 
-    // Initialize Modes
+    // Initialize Active Modes
     this.modes = {
       bubble: new BubblePopMode(),
       ehon: new EhonMode(),
       prefecture: new PrefecturePuzzleMode(),
-      tracing: new HiraganaTracingMode(),
-      peekaboo: new PeekABooMode(),
-      rattle: new RattleMode()
+      tracing: new HiraganaTracingMode()
     };
 
     this.bindDOMEvents();

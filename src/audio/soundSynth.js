@@ -53,14 +53,13 @@ class SoundSynthesizer {
       349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63  // お そ ら の ほ し よ
     ];
 
-    // Japanese Nursery Rhyme "Umi" (うみは ひろいな おおきいな...)
+    // Japanese Nursery Rhyme "Umi" (うみ)
+    // シ～ラ～ソ ミラソ～ミ～ レレソ～ソ～ラ～ / シ～シ～レ～ シシラ～ソ～ ミミレ～ラ～ソ～
     this.umiMelody = [
-      329.63, 329.63, 392.00,        // う み は
-      392.00, 440.00, 440.00, 392.00, // ひ ろ い な
-      392.00, 329.63, 392.00, 440.00, 392.00, // お お き い な
-      329.63, 329.63, 392.00,        // つ き が
-      392.00, 440.00, 440.00, 392.00, // の ぼ る し
-      392.00, 329.63, 392.00, 329.63, 261.63 // ひ が し ず む
+      493.88, 440.00, 392.00, 329.63, 440.00, 392.00, 329.63, // シ～ラ～ソ ミラソ～ミ～
+      293.66, 293.66, 392.00, 392.00, 440.00,                 // レレソ～ソ～ラ～
+      493.88, 493.88, 587.33, 493.88, 493.88, 440.00, 392.00, // シ～シ～レ～ シシラ～ソ～
+      329.63, 329.63, 293.66, 440.00, 392.00                  // ミミレ～ラ～ソ～
     ];
 
     // ABC Song (Alphabet Song)
@@ -258,6 +257,62 @@ class SoundSynthesizer {
 
     osc.start(now);
     osc.stop(now + 0.08);
+  }
+
+  /**
+   * Play realistic paper page flip sound ("ペラっ！")
+   */
+  playPageFlip() {
+    if (this.isMuted || !this.ctx) return;
+
+    const now = this.ctx.currentTime;
+
+    // Create white noise buffer for paper swish
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.15);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    const whiteNoise = this.ctx.createBufferSource();
+    whiteNoise.buffer = buffer;
+
+    // Sweeping bandpass filter to simulate paper movement
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(800, now);
+    filter.frequency.exponentialRampToValueAtTime(3200, now + 0.12);
+    filter.Q.setValueAtTime(1.5, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.01, now);
+    gain.gain.linearRampToValueAtTime(0.25, now + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+    whiteNoise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    whiteNoise.start(now);
+    whiteNoise.stop(now + 0.15);
+
+    // Add a soft pleasant chime note at the end of page flip
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now + 0.05);
+    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.15);
+
+    oscGain.gain.setValueAtTime(0.001, now + 0.05);
+    oscGain.gain.linearRampToValueAtTime(0.15, now + 0.08);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+    osc.connect(oscGain);
+    oscGain.connect(this.ctx.destination);
+
+    osc.start(now + 0.05);
+    osc.stop(now + 0.25);
   }
 
   /**

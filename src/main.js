@@ -5,10 +5,11 @@
 import { soundSynth } from './audio/soundSynth.js';
 import { CanvasEngine } from './components/CanvasEngine.js';
 import { BubblePopMode } from './modes/BubblePopMode.js';
+import { EhonMode } from './modes/EhonMode.js';
+import { PrefecturePuzzleMode } from './modes/PrefecturePuzzleMode.js';
+import { HiraganaTracingMode } from './modes/HiraganaTracingMode.js';
 import { PeekABooMode } from './modes/PeekABooMode.js';
 import { RattleMode } from './modes/RattleMode.js';
-import { LullabyMode } from './modes/LullabyMode.js';
-import { HiraganaTracingMode } from './modes/HiraganaTracingMode.js';
 
 class BabyJoyApp {
   constructor() {
@@ -28,10 +29,11 @@ class BabyJoyApp {
     // Initialize Modes
     this.modes = {
       bubble: new BubblePopMode(),
+      ehon: new EhonMode(),
+      prefecture: new PrefecturePuzzleMode(),
+      tracing: new HiraganaTracingMode(),
       peekaboo: new PeekABooMode(),
-      rattle: new RattleMode(),
-      lullaby: new LullabyMode(),
-      tracing: new HiraganaTracingMode()
+      rattle: new RattleMode()
     };
 
     this.bindDOMEvents();

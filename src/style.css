@@ -7,9 +7,10 @@
   
   /* Color Palette - Vibrant, warm, baby-friendly HSL values */
   --bg-bubble: linear-gradient(135deg, #FFF5F7 0%, #FFE3EC 50%, #E8F0FE 100%);
+  --bg-ehon: linear-gradient(135deg, #1A1E36 0%, #2D1B4E 50%, #1A1E36 100%);
+  --bg-prefecture: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 50%, #F0F9FF 100%);
   --bg-peekaboo: linear-gradient(135deg, #E6FFFA 0%, #E0F2FE 50%, #FFFBEB 100%);
   --bg-rattle: linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 50%, #F0F4FF 100%);
-  --bg-lullaby: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #311042 100%);
   --bg-tracing: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 50%, #FFEDD5 100%);
 
   --primary-pink: #FF6584;

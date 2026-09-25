@@ -1,5 +1,5 @@
 /* ==========================================================================
-   あそびモード 5: ひらがななぞりがき (Automatic Font Bounding Box Alignment)
+   あそびモード 5: ひらがななぞりがき (Exact Font Silhouette Tracing Mode)
    ========================================================================== */
 
 export class HiraganaTracingMode {
@@ -8,18 +8,18 @@ export class HiraganaTracingMode {
     this.width = 0;
     this.height = 0;
 
-    // Start points defined relative to the actual rendered font glyph bounding box [0..1]
+    // Precisely aligned start points for each stroke tip relative to font bounding box [0..1]
     this.charList = [
-      { char: 'あ', word: 'あひる', icon: '🐥', startPts: [{ rx: 0.05, ry: 0.24, n: 1 }, { rx: 0.48, ry: 0.00, n: 2 }, { rx: 0.72, ry: 0.38, n: 3 }] },
-      { char: 'い', word: 'いちご', icon: '🍓', startPts: [{ rx: 0.12, ry: 0.02, n: 1 }, { rx: 0.88, ry: 0.10, n: 2 }] },
+      { char: 'あ', word: 'あひる', icon: '🐥', startPts: [{ rx: 0.12, ry: 0.24, n: 1 }, { rx: 0.50, ry: 0.02, n: 2 }, { rx: 0.72, ry: 0.36, n: 3 }] },
+      { char: 'い', word: 'いちご', icon: '🍓', startPts: [{ rx: 0.12, ry: 0.02, n: 1 }, { rx: 0.88, ry: 0.12, n: 2 }] },
       { char: 'う', word: 'うさぎ', icon: '🐰', startPts: [{ rx: 0.42, ry: 0.02, n: 1 }, { rx: 0.12, ry: 0.32, n: 2 }] },
-      { char: 'え', word: 'えんぴつ', icon: '✏️', startPts: [{ rx: 0.42, ry: 0.02, n: 1 }, { rx: 0.05, ry: 0.36, n: 2 }] },
-      { char: 'お', word: 'おにぎり', icon: '🍙', startPts: [{ rx: 0.05, ry: 0.24, n: 1 }, { rx: 0.42, ry: 0.00, n: 2 }, { rx: 0.80, ry: 0.18, n: 3 }] },
-      { char: 'か', word: 'かめ', icon: '🐢', startPts: [{ rx: 0.05, ry: 0.20, n: 1 }, { rx: 0.44, ry: 0.00, n: 2 }, { rx: 0.85, ry: 0.12, n: 3 }] },
-      { char: 'き', word: 'きりん', icon: '🦒', startPts: [{ rx: 0.05, ry: 0.20, n: 1 }, { rx: 0.05, ry: 0.40, n: 2 }, { rx: 0.58, ry: 0.00, n: 3 }, { rx: 0.20, ry: 0.70, n: 4 }] },
-      { char: 'く', word: 'くま', icon: '🐻', startPts: [{ rx: 0.95, ry: 0.02, n: 1 }] },
-      { char: 'け', word: 'けーき', icon: '🎂', startPts: [{ rx: 0.05, ry: 0.02, n: 1 }, { rx: 0.48, ry: 0.28, n: 2 }, { rx: 0.85, ry: 0.02, n: 3 }] },
-      { char: 'こ', word: 'らいおん', icon: '🦁', startPts: [{ rx: 0.05, ry: 0.05, n: 1 }, { rx: 0.05, ry: 0.85, n: 2 }] }
+      { char: 'え', word: 'えんぴつ', icon: '✏️', startPts: [{ rx: 0.42, ry: 0.02, n: 1 }, { rx: 0.10, ry: 0.35, n: 2 }] },
+      { char: 'お', word: 'おにぎり', icon: '🍙', startPts: [{ rx: 0.10, ry: 0.22, n: 1 }, { rx: 0.42, ry: 0.02, n: 2 }, { rx: 0.82, ry: 0.20, n: 3 }] },
+      { char: 'か', word: 'かめ', icon: '🐢', startPts: [{ rx: 0.16, ry: 0.22, n: 1 }, { rx: 0.46, ry: 0.06, n: 2 }, { rx: 0.68, ry: 0.22, n: 3 }] },
+      { char: 'き', word: 'きりん', icon: '🦒', startPts: [{ rx: 0.12, ry: 0.18, n: 1 }, { rx: 0.12, ry: 0.38, n: 2 }, { rx: 0.58, ry: 0.02, n: 3 }, { rx: 0.22, ry: 0.68, n: 4 }] },
+      { char: 'く', word: 'くま', icon: '🐻', startPts: [{ rx: 0.90, ry: 0.02, n: 1 }] },
+      { char: 'け', word: 'けーき', icon: '🎂', startPts: [{ rx: 0.08, ry: 0.02, n: 1 }, { rx: 0.46, ry: 0.28, n: 2 }, { rx: 0.82, ry: 0.02, n: 3 }] },
+      { char: 'こ', word: 'らいおん', icon: '🦁', startPts: [{ rx: 0.12, ry: 0.04, n: 1 }, { rx: 0.12, ry: 0.88, n: 2 }] }
     ];
 
     this.charIndex = 0;
@@ -296,7 +296,7 @@ export class HiraganaTracingMode {
   }
 
   update() {
-    for (let i = this.celebrationParticles.length - 1; i >= 0; i--) {
+    for (let i = 0; i < this.celebrationParticles.length; i++) {
       const p = this.celebrationParticles[i];
       p.x += p.vx;
       p.y += p.vy;
@@ -352,7 +352,7 @@ export class HiraganaTracingMode {
     ctx.fillText(currentChar.char, this.boxX + this.boxSize / 2, this.boxY + this.boxSize / 2 + 14);
     ctx.restore();
 
-    // 4. Render User Traced Color (Clipped to Font Silhouette)
+    // 4. Render User Traced Color (Single Beautiful Color)
     ctx.save();
     const renderCompCanvas = document.createElement('canvas');
     renderCompCanvas.width = this.boxSize;

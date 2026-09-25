@@ -149,7 +149,7 @@ export class HiraganaTracingMode {
       return;
     }
 
-    const brushRadius = Math.max(14, this.boxSize * 0.045);
+    const brushRadius = Math.max(18, this.boxSize * 0.058);
 
     this.traceCtx.save();
     this.traceCtx.lineCap = 'round';
@@ -178,7 +178,7 @@ export class HiraganaTracingMode {
       currentChar.startPts.forEach(pt => {
         const px = pt.x * this.boxSize;
         const py = pt.y * this.boxSize;
-        if (Math.hypot(x - px, y - py) < 32) {
+        if (Math.hypot(x - px, y - py) < 36) {
           if (!this.hitStartPts.has(pt.n)) {
             this.hitStartPts.add(pt.n);
             this.soundSynth.playStrokeSuccess();
@@ -212,7 +212,7 @@ export class HiraganaTracingMode {
     const totalRequiredStartPts = currentChar.startPts ? currentChar.startPts.length : 0;
     const allStartPtsHit = this.hitStartPts.size >= totalRequiredStartPts;
 
-    if (this.tracedRatio >= 0.86 && allStartPtsHit && !this.isCompleted) {
+    if (this.tracedRatio >= 0.80 && allStartPtsHit && !this.isCompleted) {
       this.triggerCompletion();
     }
   }

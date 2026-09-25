@@ -8,17 +8,18 @@ export class HiraganaTracingMode {
     this.width = 0;
     this.height = 0;
 
+    // Adjusted start points aligned to Zen Maru Gothic font stroke tips
     this.charList = [
-      { char: 'あ', word: 'あひる', icon: '🐥', startPts: [{ x: 0.25, y: 0.35, n: 1 }, { x: 0.50, y: 0.20, n: 2 }, { x: 0.65, y: 0.45, n: 3 }] },
-      { char: 'い', word: 'いちご', icon: '🍓', startPts: [{ x: 0.35, y: 0.25, n: 1 }, { x: 0.65, y: 0.32, n: 2 }] },
-      { char: 'う', word: 'うさぎ', icon: '🐰', startPts: [{ x: 0.48, y: 0.22, n: 1 }, { x: 0.35, y: 0.42, n: 2 }] },
-      { char: 'え', word: 'えんぴつ', icon: '✏️', startPts: [{ x: 0.48, y: 0.22, n: 1 }, { x: 0.30, y: 0.45, n: 2 }] },
-      { char: 'お', word: 'おにぎり', icon: '🍙', startPts: [{ x: 0.25, y: 0.35, n: 1 }, { x: 0.42, y: 0.20, n: 2 }, { x: 0.68, y: 0.32, n: 3 }] },
-      { char: 'か', word: 'かめ', icon: '🐢', startPts: [{ x: 0.28, y: 0.32, n: 1 }, { x: 0.40, y: 0.22, n: 2 }, { x: 0.68, y: 0.28, n: 3 }] },
-      { char: 'き', word: 'きりん', icon: '🦒', startPts: [{ x: 0.30, y: 0.30, n: 1 }, { x: 0.32, y: 0.44, n: 2 }, { x: 0.55, y: 0.18, n: 3 }, { x: 0.35, y: 0.75, n: 4 }] },
-      { char: 'く', word: 'くま', icon: '🐻', startPts: [{ x: 0.68, y: 0.25, n: 1 }] },
-      { char: 'け', word: 'けーき', icon: '🎂', startPts: [{ x: 0.30, y: 0.25, n: 1 }, { x: 0.48, y: 0.40, n: 2 }, { x: 0.65, y: 0.25, n: 3 }] },
-      { char: 'こ', word: 'らいおん', icon: '🦁', startPts: [{ x: 0.30, y: 0.32, n: 1 }, { x: 0.30, y: 0.70, n: 2 }] }
+      { char: 'あ', word: 'あひる', icon: '🐥', startPts: [{ x: 0.22, y: 0.33, n: 1 }, { x: 0.50, y: 0.17, n: 2 }, { x: 0.65, y: 0.42, n: 3 }] },
+      { char: 'い', word: 'いちご', icon: '🍓', startPts: [{ x: 0.30, y: 0.25, n: 1 }, { x: 0.68, y: 0.30, n: 2 }] },
+      { char: 'う', word: 'うさぎ', icon: '🐰', startPts: [{ x: 0.44, y: 0.20, n: 1 }, { x: 0.32, y: 0.40, n: 2 }] },
+      { char: 'え', word: 'えんぴつ', icon: '✏️', startPts: [{ x: 0.44, y: 0.20, n: 1 }, { x: 0.26, y: 0.44, n: 2 }] },
+      { char: 'お', word: 'おにぎり', icon: '🍙', startPts: [{ x: 0.22, y: 0.33, n: 1 }, { x: 0.42, y: 0.18, n: 2 }, { x: 0.70, y: 0.30, n: 3 }] },
+      { char: 'か', word: 'かめ', icon: '🐢', startPts: [{ x: 0.24, y: 0.30, n: 1 }, { x: 0.44, y: 0.18, n: 2 }, { x: 0.72, y: 0.26, n: 3 }] },
+      { char: 'き', word: 'きりん', icon: '🦒', startPts: [{ x: 0.22, y: 0.30, n: 1 }, { x: 0.22, y: 0.44, n: 2 }, { x: 0.58, y: 0.18, n: 3 }, { x: 0.34, y: 0.68, n: 4 }] },
+      { char: 'く', word: 'くま', icon: '🐻', startPts: [{ x: 0.70, y: 0.22, n: 1 }] },
+      { char: 'け', word: 'けーき', icon: '🎂', startPts: [{ x: 0.28, y: 0.20, n: 1 }, { x: 0.48, y: 0.38, n: 2 }, { x: 0.68, y: 0.20, n: 3 }] },
+      { char: 'こ', word: 'らいおん', icon: '🦁', startPts: [{ x: 0.26, y: 0.30, n: 1 }, { x: 0.28, y: 0.66, n: 2 }] }
     ];
 
     this.charIndex = 0;
@@ -77,6 +78,13 @@ export class HiraganaTracingMode {
     this.traceCanvas.height = this.boxSize;
   }
 
+  getStartPtScreenCoords(pt) {
+    return {
+      x: this.boxX + pt.x * this.boxSize,
+      y: this.boxY + pt.y * this.boxSize + 14
+    };
+  }
+
   loadChar(index) {
     this.charIndex = (index + this.charList.length) % this.charList.length;
     this.isCompleted = false;
@@ -85,7 +93,6 @@ export class HiraganaTracingMode {
     this.hitStartPts.clear();
     this.lastTouchPt = null;
 
-    // Pick a single random color for this character session
     this.currentColor = this.palette[Math.floor(Math.random() * this.palette.length)];
 
     const currentChar = this.charList[this.charIndex];
@@ -176,9 +183,9 @@ export class HiraganaTracingMode {
     const currentChar = this.charList[this.charIndex];
     if (currentChar.startPts) {
       currentChar.startPts.forEach(pt => {
-        const px = pt.x * this.boxSize;
-        const py = pt.y * this.boxSize;
-        if (Math.hypot(x - px, y - py) < 36) {
+        const screenPt = this.getStartPtScreenCoords(pt);
+        const localPt = { x: screenPt.x - this.boxX, y: screenPt.y - this.boxY };
+        if (Math.hypot(x - localPt.x, y - localPt.y) < 38) {
           if (!this.hitStartPts.has(pt.n)) {
             this.hitStartPts.add(pt.n);
             this.soundSynth.playStrokeSuccess();
@@ -326,12 +333,11 @@ export class HiraganaTracingMode {
     // 5. Render Stroke Order Start Numbers (①, ②, ③)
     if (!this.isCompleted && currentChar.startPts) {
       currentChar.startPts.forEach(pt => {
-        const px = this.boxX + pt.x * this.boxSize;
-        const py = this.boxY + pt.y * this.boxSize;
+        const p = this.getStartPtScreenCoords(pt);
         const isHit = this.hitStartPts.has(pt.n);
 
         ctx.beginPath();
-        ctx.arc(px, py, 18, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
         ctx.fillStyle = isHit ? '#06D6A0' : '#FF9F1C';
         ctx.fill();
         ctx.lineWidth = 2.5;
@@ -342,7 +348,7 @@ export class HiraganaTracingMode {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(isHit ? '✓' : `${pt.n}`, px, py);
+        ctx.fillText(isHit ? '✓' : `${pt.n}`, p.x, p.y);
       });
     }
 

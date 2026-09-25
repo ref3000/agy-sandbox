@@ -1,5 +1,5 @@
 /* ==========================================================================
-   あそびモード 5: ひらがななぞりがき (Exact Font Silhouette Tracing Mode)
+   あそびモード 5: ひらがななぞりがき (Automatic Font Bounding Box Alignment)
    ========================================================================== */
 
 export class HiraganaTracingMode {
@@ -8,18 +8,18 @@ export class HiraganaTracingMode {
     this.width = 0;
     this.height = 0;
 
-    // Adjusted start points aligned to Zen Maru Gothic font stroke tips
+    // Start points defined relative to the actual rendered font glyph bounding box [0..1]
     this.charList = [
-      { char: 'あ', word: 'あひる', icon: '🐥', startPts: [{ x: 0.22, y: 0.33, n: 1 }, { x: 0.50, y: 0.17, n: 2 }, { x: 0.65, y: 0.42, n: 3 }] },
-      { char: 'い', word: 'いちご', icon: '🍓', startPts: [{ x: 0.30, y: 0.25, n: 1 }, { x: 0.68, y: 0.30, n: 2 }] },
-      { char: 'う', word: 'うさぎ', icon: '🐰', startPts: [{ x: 0.44, y: 0.20, n: 1 }, { x: 0.32, y: 0.40, n: 2 }] },
-      { char: 'え', word: 'えんぴつ', icon: '✏️', startPts: [{ x: 0.44, y: 0.20, n: 1 }, { x: 0.26, y: 0.44, n: 2 }] },
-      { char: 'お', word: 'おにぎり', icon: '🍙', startPts: [{ x: 0.22, y: 0.33, n: 1 }, { x: 0.42, y: 0.18, n: 2 }, { x: 0.70, y: 0.30, n: 3 }] },
-      { char: 'か', word: 'かめ', icon: '🐢', startPts: [{ x: 0.24, y: 0.30, n: 1 }, { x: 0.44, y: 0.18, n: 2 }, { x: 0.72, y: 0.26, n: 3 }] },
-      { char: 'き', word: 'きりん', icon: '🦒', startPts: [{ x: 0.22, y: 0.30, n: 1 }, { x: 0.22, y: 0.44, n: 2 }, { x: 0.58, y: 0.18, n: 3 }, { x: 0.34, y: 0.68, n: 4 }] },
-      { char: 'く', word: 'くま', icon: '🐻', startPts: [{ x: 0.70, y: 0.22, n: 1 }] },
-      { char: 'け', word: 'けーき', icon: '🎂', startPts: [{ x: 0.28, y: 0.20, n: 1 }, { x: 0.48, y: 0.38, n: 2 }, { x: 0.68, y: 0.20, n: 3 }] },
-      { char: 'こ', word: 'らいおん', icon: '🦁', startPts: [{ x: 0.26, y: 0.30, n: 1 }, { x: 0.28, y: 0.66, n: 2 }] }
+      { char: 'あ', word: 'あひる', icon: '🐥', startPts: [{ rx: 0.05, ry: 0.24, n: 1 }, { rx: 0.48, ry: 0.00, n: 2 }, { rx: 0.72, ry: 0.38, n: 3 }] },
+      { char: 'い', word: 'いちご', icon: '🍓', startPts: [{ rx: 0.12, ry: 0.02, n: 1 }, { rx: 0.88, ry: 0.10, n: 2 }] },
+      { char: 'う', word: 'うさぎ', icon: '🐰', startPts: [{ rx: 0.42, ry: 0.02, n: 1 }, { rx: 0.12, ry: 0.32, n: 2 }] },
+      { char: 'え', word: 'えんぴつ', icon: '✏️', startPts: [{ rx: 0.42, ry: 0.02, n: 1 }, { rx: 0.05, ry: 0.36, n: 2 }] },
+      { char: 'お', word: 'おにぎり', icon: '🍙', startPts: [{ rx: 0.05, ry: 0.24, n: 1 }, { rx: 0.42, ry: 0.00, n: 2 }, { rx: 0.80, ry: 0.18, n: 3 }] },
+      { char: 'か', word: 'かめ', icon: '🐢', startPts: [{ rx: 0.05, ry: 0.20, n: 1 }, { rx: 0.44, ry: 0.00, n: 2 }, { rx: 0.85, ry: 0.12, n: 3 }] },
+      { char: 'き', word: 'きりん', icon: '🦒', startPts: [{ rx: 0.05, ry: 0.20, n: 1 }, { rx: 0.05, ry: 0.40, n: 2 }, { rx: 0.58, ry: 0.00, n: 3 }, { rx: 0.20, ry: 0.70, n: 4 }] },
+      { char: 'く', word: 'くま', icon: '🐻', startPts: [{ rx: 0.95, ry: 0.02, n: 1 }] },
+      { char: 'け', word: 'けーき', icon: '🎂', startPts: [{ rx: 0.05, ry: 0.02, n: 1 }, { rx: 0.48, ry: 0.28, n: 2 }, { rx: 0.85, ry: 0.02, n: 3 }] },
+      { char: 'こ', word: 'らいおん', icon: '🦁', startPts: [{ rx: 0.05, ry: 0.05, n: 1 }, { rx: 0.05, ry: 0.85, n: 2 }] }
     ];
 
     this.charIndex = 0;
@@ -33,6 +33,7 @@ export class HiraganaTracingMode {
     this.traceCanvas = document.createElement('canvas');
     this.traceCtx = this.traceCanvas.getContext('2d');
 
+    this.fontBounds = null;
     this.tracedRatio = 0;
     this.hitStartPts = new Set();
     this.isCompleted = false;
@@ -40,7 +41,6 @@ export class HiraganaTracingMode {
 
     this.lastTouchPt = null;
     
-    // Curated single color palette
     this.palette = [
       '#FF6584', // Coral Pink
       '#FF9F1C', // Warm Orange
@@ -78,10 +78,46 @@ export class HiraganaTracingMode {
     this.traceCanvas.height = this.boxSize;
   }
 
+  calculateFontBounds() {
+    const imgData = this.maskCtx.getImageData(0, 0, this.boxSize, this.boxSize).data;
+    let minX = this.boxSize, maxX = 0, minY = this.boxSize, maxY = 0;
+    let count = 0;
+
+    for (let y = 0; y < this.boxSize; y++) {
+      for (let x = 0; x < this.boxSize; x++) {
+        const alpha = imgData[(y * this.boxSize + x) * 4 + 3];
+        if (alpha > 30) {
+          count++;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (count > 0) {
+      this.fontBounds = {
+        minX,
+        minY,
+        width: Math.max(1, maxX - minX),
+        height: Math.max(1, maxY - minY),
+        count
+      };
+    } else {
+      this.fontBounds = { minX: 0, minY: 0, width: this.boxSize, height: this.boxSize, count: 1 };
+    }
+  }
+
   getStartPtScreenCoords(pt) {
+    if (!this.fontBounds) {
+      return { x: this.boxX + pt.rx * this.boxSize, y: this.boxY + pt.ry * this.boxSize };
+    }
+    const glyphX = this.fontBounds.minX + pt.rx * this.fontBounds.width;
+    const glyphY = this.fontBounds.minY + pt.ry * this.fontBounds.height;
     return {
-      x: this.boxX + pt.x * this.boxSize,
-      y: this.boxY + pt.y * this.boxSize + 14
+      x: this.boxX + glyphX,
+      y: this.boxY + glyphY
     };
   }
 
@@ -105,12 +141,14 @@ export class HiraganaTracingMode {
     this.maskCtx.fillStyle = '#000000';
     this.maskCtx.fillText(currentChar.char, this.boxSize / 2, this.boxSize / 2 + 14);
 
-    // 2. Clear User Trace Canvas
+    // 2. Automatically measure font silhouette bounding box
+    this.calculateFontBounds();
+
+    // 3. Clear User Trace Canvas
     this.traceCtx.clearRect(0, 0, this.boxSize, this.boxSize);
   }
 
   onTouch(x, y) {
-    // Navigation & Action Buttons Hit Tests
     const prevBtn = { x: 50, y: this.height / 2, r: 35 };
     const nextBtn = { x: this.width - 50, y: this.height / 2, r: 35 };
     const resetBtn = { x: this.width / 2, y: this.boxY + this.boxSize + 45, w: 140, h: 44 };
@@ -179,7 +217,7 @@ export class HiraganaTracingMode {
 
     this.lastTouchPt = { x, y };
 
-    // Track Start Points Hit
+    // Track Start Points Hit relative to font bounds
     const currentChar = this.charList[this.charIndex];
     if (currentChar.startPts) {
       currentChar.startPts.forEach(pt => {
@@ -235,14 +273,12 @@ export class HiraganaTracingMode {
       }, 400);
     }
 
-    // Fill entire font mask nicely upon completion
     this.traceCtx.save();
     this.traceCtx.globalCompositeOperation = 'source-over';
     this.traceCtx.fillStyle = this.currentColor;
     this.traceCtx.fillRect(0, 0, this.boxSize, this.boxSize);
     this.traceCtx.restore();
 
-    // Celebration fireworks particles using current theme color
     this.celebrationParticles = [];
     for (let i = 0; i < 45; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -316,7 +352,7 @@ export class HiraganaTracingMode {
     ctx.fillText(currentChar.char, this.boxX + this.boxSize / 2, this.boxY + this.boxSize / 2 + 14);
     ctx.restore();
 
-    // 4. Render User Traced Color (Single Beautiful Color)
+    // 4. Render User Traced Color (Clipped to Font Silhouette)
     ctx.save();
     const renderCompCanvas = document.createElement('canvas');
     renderCompCanvas.width = this.boxSize;

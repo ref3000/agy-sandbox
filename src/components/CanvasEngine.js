@@ -134,8 +134,13 @@ export class CanvasEngine {
   handleSingleTouch(x, y, index) {
     this.spawnTouchBurst(x, y);
 
-    const pitchIdx = Math.floor((x / Math.max(1, this.width)) * 11);
-    this.soundSynth.playTouchTone(pitchIdx);
+    // Play Japanese Nursery Rhyme ("チューリップ") melody note on tap in Ponpon (Bubble Pop) mode
+    if (this.activeMode && (this.activeMode.constructor.name === 'BubblePopMode' || this.activeMode.isBubbleMode)) {
+      this.soundSynth.playNurseryMelodyNote();
+    } else {
+      const pitchIdx = Math.floor((x / Math.max(1, this.width)) * 11);
+      this.soundSynth.playTouchTone(pitchIdx);
+    }
 
     if (this.activeMode && this.activeMode.onTouch) {
       this.activeMode.onTouch(x, y, index);

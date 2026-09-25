@@ -27,6 +27,23 @@ class SoundSynthesizer {
       1046.50 // C6
     ];
 
+    // Japanese Nursery Rhyme "Tulip" (さいた さいた チューリップのはなが...)
+    this.tulipMelody = [
+      261.63, 293.66, 329.63, // さ い た
+      261.63, 293.66, 329.63, // さ い た
+      392.00, 329.63, 293.66, 261.63, // ちゅー りっ ぷ の
+      293.66, 329.63, 293.66, // は な が
+      261.63, 293.66, 329.63, // な ら ん だ
+      261.63, 293.66, 329.63, // な ら ん だ
+      392.00, 329.63, 293.66, 261.63, // あ か し ろ
+      293.66, 329.63, 261.63, // き い ろ
+      392.00, 392.00, 329.63, 392.00, // ど の は な
+      440.00, 440.00, 392.00, // み て も
+      329.63, 329.63, 293.66, 293.66, // き れ い
+      261.63 // だ な
+    ];
+    this.tulipMelodyIdx = 0;
+
     // Lullaby Melody notes & durations
     this.lullabyNotes = [
       { note: 261.63, dur: 0.8 }, { note: 261.63, dur: 0.8 },
@@ -120,6 +137,51 @@ class SoundSynthesizer {
 
     osc.start(now);
     osc.stop(now + 0.55);
+  }
+
+  /**
+   * Play next note of Japanese Nursery Rhyme ("チューリップ") on tap
+   */
+  playNurseryMelodyNote() {
+    if (this.isMuted || !this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    if (now - this.lastTouchTime < 0.04) return;
+    this.lastTouchTime = now;
+
+    const freq = this.tulipMelody[this.tulipMelodyIdx];
+    this.tulipMelodyIdx = (this.tulipMelodyIdx + 1) % this.tulipMelody.length;
+
+    // Glockenspiel / Marimba dual oscillator for rich, warm musical sound
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(freq, now);
+
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(freq * 2, now);
+
+    const gain1 = this.ctx.createGain();
+    const gain2 = this.ctx.createGain();
+
+    gain1.gain.setValueAtTime(0.001, now);
+    gain1.gain.linearRampToValueAtTime(0.35, now + 0.015);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+    gain2.gain.setValueAtTime(0.001, now);
+    gain2.gain.linearRampToValueAtTime(0.12, now + 0.01);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+    osc1.connect(gain1);
+    osc2.connect(gain2);
+    gain1.connect(this.ctx.destination);
+    gain2.connect(this.ctx.destination);
+
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 0.70);
+    osc2.stop(now + 0.35);
   }
 
   /**

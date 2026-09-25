@@ -14,6 +14,7 @@ export class BubblePopMode {
       '#118AB2', '#A855F7', '#FF85A2', '#38BDF8'
     ];
     this.faceIcons = ['😊', '🐻', '🐰', '🐥', '🐱', '⭐', '🎈'];
+    this.isBubbleMode = true;
   }
 
   init(width, height, soundSynth) {

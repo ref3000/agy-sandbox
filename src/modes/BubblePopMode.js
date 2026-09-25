@@ -13,18 +13,41 @@ export class BubblePopMode {
       '#FF6584', '#FF9F1C', '#FFD166', '#06D6A0', 
       '#118AB2', '#A855F7', '#FF85A2', '#38BDF8'
     ];
-    this.faceIcons = ['😊', '🐻', '🐰', '🐥', '🐱', '⭐', '🎈'];
     this.isBubbleMode = true;
+
+    // Nursery Rhyme Songs & Emojis
+    this.songs = {
+      tulip: {
+        name: 'チューリップ 🌷',
+        symbols: ['🌷', '🌸', '🌹', '🌺', '🌼']
+      },
+      star: {
+        name: 'きらきらぼし ⭐',
+        symbols: ['⭐', '🌟', '✨', '💫', '🌙']
+      }
+    };
+    this.currentSongKey = 'tulip';
+    this.symbols = this.songs.tulip.symbols;
   }
 
   init(width, height, soundSynth) {
     this.width = width;
     this.height = height;
     this.soundSynth = soundSynth;
+
+    // Randomly select between Tulip (Flower) and Star song
+    const songKeys = ['tulip', 'star'];
+    this.currentSongKey = songKeys[Math.floor(Math.random() * songKeys.length)];
+    this.symbols = this.songs[this.currentSongKey].symbols;
+
+    if (this.soundSynth && this.soundSynth.setNurserySong) {
+      this.soundSynth.setNurserySong(this.currentSongKey);
+    }
+
     this.bubbles = [];
     this.popEffects = [];
 
-    // Pre-spawn 8-9 bubbles
+    // Pre-spawn 8-9 balloons
     for (let i = 0; i < 9; i++) {
       this.spawnBubble(true);
     }
@@ -35,7 +58,7 @@ export class BubblePopMode {
     const x = radius + Math.random() * (Math.max(100, this.width - radius * 2));
     const y = randomY ? Math.random() * (this.height - 100) + 50 : this.height + radius + Math.random() * 80;
     const color = this.colors[Math.floor(Math.random() * this.colors.length)];
-    const face = this.faceIcons[Math.floor(Math.random() * this.faceIcons.length)];
+    const face = this.symbols[Math.floor(Math.random() * this.symbols.length)];
 
     this.bubbles.push({
       x, y,
@@ -49,6 +72,13 @@ export class BubblePopMode {
   }
 
   onTouch(x, y) {
+    // Check if clicked song switch pill at top center
+    const pill = { x: this.width / 2, y: 70, w: 210, h: 38 };
+    if (Math.abs(x - pill.x) < pill.w / 2 && Math.abs(y - pill.y) < pill.h / 2) {
+      this.switchSong();
+      return;
+    }
+
     for (let i = this.bubbles.length - 1; i >= 0; i--) {
       const b = this.bubbles[i];
       const dist = Math.hypot(x - b.x, y - b.y);
@@ -63,8 +93,19 @@ export class BubblePopMode {
     }
   }
 
+  switchSong() {
+    this.currentSongKey = this.currentSongKey === 'tulip' ? 'star' : 'tulip';
+    this.symbols = this.songs[this.currentSongKey].symbols;
+    if (this.soundSynth && this.soundSynth.setNurserySong) {
+      this.soundSynth.setNurserySong(this.currentSongKey);
+    }
+    // Refresh balloon faces
+    this.bubbles.forEach(b => {
+      b.face = this.symbols[Math.floor(Math.random() * this.symbols.length)];
+    });
+  }
+
   spawnPopEffect(x, y, color, face) {
-    // 8 particles max
     for (let i = 0; i < 8; i++) {
       const angle = (Math.PI * 2 / 8) * i;
       const speed = 4 + Math.random() * 5;
@@ -120,17 +161,39 @@ export class BubblePopMode {
   }
 
   render(ctx) {
-    // Render Bubbles & Balloons without shadowBlur
+    // 1. Song Title Pill Badge at top
+    const songInfo = this.songs[this.currentSongKey];
+    ctx.save();
+    const pillW = 210;
+    const pillH = 38;
+    const pillX = this.width / 2 - pillW / 2;
+    const pillY = 65;
+
+    ctx.beginPath();
+    ctx.roundRect(pillX, pillY, pillW, pillH, 20);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#FFE0E9';
+    ctx.stroke();
+
+    ctx.font = '700 15px "Zen Maru Gothic", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#FF6584';
+    ctx.fillText(`🎵 きょく: ${songInfo.name}`, this.width / 2, pillY + pillH / 2);
+    ctx.restore();
+
+    // 2. Render Bubbles & Balloons
     for (let i = 0; i < this.bubbles.length; i++) {
       const b = this.bubbles[i];
 
-      // Base circle fill
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
       ctx.fillStyle = b.color;
       ctx.fill();
 
-      // Specular Highlight (Soft white arc)
+      // Specular Highlight
       ctx.beginPath();
       ctx.arc(b.x - b.radius * 0.35, b.y - b.radius * 0.35, b.radius * 0.22, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
@@ -144,7 +207,7 @@ export class BubblePopMode {
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      // Cute face inside
+      // Flower or Star Emoji inside
       ctx.font = `${b.radius * 1.1}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';

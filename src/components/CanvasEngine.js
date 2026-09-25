@@ -164,17 +164,21 @@ export class CanvasEngine {
       this.particles.splice(0, this.particles.length - 20);
     }
 
+    const modeSymbols = (this.activeMode && this.activeMode.symbols) ? this.activeMode.symbols : null;
+
     const particleCount = 6 + Math.floor(Math.random() * 4);
     for (let i = 0; i < particleCount; i++) {
       const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.4;
       const speed = 2.5 + Math.random() * 4.5;
       const color = this.colors[Math.floor(Math.random() * this.colors.length)];
+      const symbol = modeSymbols ? modeSymbols[Math.floor(Math.random() * modeSymbols.length)] : null;
       this.particles.push({
         x, y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 1.2,
         color,
-        size: 8 + Math.random() * 10,
+        symbol,
+        size: symbol ? 12 + Math.random() * 6 : 8 + Math.random() * 10,
         alpha: 1
       });
     }
@@ -219,11 +223,18 @@ export class CanvasEngine {
           continue;
         }
 
-        this.ctx.beginPath();
-        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        this.ctx.fillStyle = p.color;
         this.ctx.globalAlpha = Math.max(0, p.alpha);
-        this.ctx.fill();
+        if (p.symbol) {
+          this.ctx.font = `${p.size * 1.5}px sans-serif`;
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          this.ctx.fillText(p.symbol, p.x, p.y);
+        } else {
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          this.ctx.fillStyle = p.color;
+          this.ctx.fill();
+        }
       }
 
       this.ctx.globalAlpha = 1.0;

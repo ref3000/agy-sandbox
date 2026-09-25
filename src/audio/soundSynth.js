@@ -42,7 +42,19 @@ class SoundSynthesizer {
       329.63, 329.63, 293.66, 293.66, // き れ い
       261.63 // だ な
     ];
-    this.tulipMelodyIdx = 0;
+
+    // Japanese Nursery Rhyme "Twinkle Twinkle Little Star" (きらきらひかる おそらのほしよ...)
+    this.starMelody = [
+      261.63, 261.63, 392.00, 392.00, 440.00, 440.00, 392.00, // き ら き ら ひ か る
+      349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63, // お そ ら の ほ し よ
+      392.00, 392.00, 349.23, 349.23, 329.63, 329.63, 293.66, // ま ば た き し て は
+      392.00, 392.00, 349.23, 349.23, 329.63, 329.63, 293.66, // み ん な を み て る
+      261.63, 261.63, 392.00, 392.00, 440.00, 440.00, 392.00, // き ら き ら ひ か る
+      349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63  // お そ ら の ほ し よ
+    ];
+
+    this.currentMelody = this.tulipMelody;
+    this.currentMelodyIdx = 0;
 
     // Lullaby Melody notes & durations
     this.lullabyNotes = [
@@ -140,7 +152,19 @@ class SoundSynthesizer {
   }
 
   /**
-   * Play next note of Japanese Nursery Rhyme ("チューリップ") on tap
+   * Set active nursery rhyme song ('tulip' or 'star')
+   */
+  setNurserySong(songKey) {
+    if (songKey === 'star') {
+      this.currentMelody = this.starMelody;
+    } else {
+      this.currentMelody = this.tulipMelody;
+    }
+    this.currentMelodyIdx = 0;
+  }
+
+  /**
+   * Play next note of active Japanese Nursery Rhyme ("チューリップ" or "きらきらぼし") on tap
    */
   playNurseryMelodyNote() {
     if (this.isMuted || !this.ctx) return;
@@ -149,8 +173,9 @@ class SoundSynthesizer {
     if (now - this.lastTouchTime < 0.04) return;
     this.lastTouchTime = now;
 
-    const freq = this.tulipMelody[this.tulipMelodyIdx];
-    this.tulipMelodyIdx = (this.tulipMelodyIdx + 1) % this.tulipMelody.length;
+    const melody = this.currentMelody || this.tulipMelody;
+    const freq = melody[this.currentMelodyIdx % melody.length];
+    this.currentMelodyIdx = (this.currentMelodyIdx + 1) % melody.length;
 
     // Glockenspiel / Marimba dual oscillator for rich, warm musical sound
     const osc1 = this.ctx.createOscillator();

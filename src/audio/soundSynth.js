@@ -53,6 +53,26 @@ class SoundSynthesizer {
       349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63  // お そ ら の ほ し よ
     ];
 
+    // Japanese Nursery Rhyme "Umi" (うみは ひろいな おおきいな...)
+    this.umiMelody = [
+      261.63, 261.63, 392.00,        // う み は
+      392.00, 440.00, 440.00, 392.00, // ひ ろ い な
+      349.23, 349.23, 329.63, 329.63, 293.66, 261.63, // お お き い な
+      329.63, 329.63, 392.00,        // つ き が
+      392.00, 440.00, 440.00, 392.00, // の ぼ る し
+      349.23, 349.23, 329.63, 293.66, 261.63 // ひ が し ず む
+    ];
+
+    // ABC Song (Alphabet Song)
+    this.abcMelody = [
+      261.63, 261.63, 392.00, 392.00, 440.00, 440.00, 392.00, // A B C D E F G
+      349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63, // H I J K L M N O P
+      392.00, 392.00, 349.23, 349.23, 329.63, 329.63, 293.66, // Q R S, T U V
+      392.00, 392.00, 349.23, 349.23, 329.63, 329.63, 293.66, // W X, Y and Z
+      261.63, 261.63, 392.00, 392.00, 440.00, 440.00, 392.00, // Now I know my ABCs
+      349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63  // Next time won't you sing with me
+    ];
+
     this.currentMelody = this.tulipMelody;
     this.currentMelodyIdx = 0;
 
@@ -157,6 +177,10 @@ class SoundSynthesizer {
   setNurserySong(songKey) {
     if (songKey === 'star') {
       this.currentMelody = this.starMelody;
+    } else if (songKey === 'umi') {
+      this.currentMelody = this.umiMelody;
+    } else if (songKey === 'abc') {
+      this.currentMelody = this.abcMelody;
     } else {
       this.currentMelody = this.tulipMelody;
     }

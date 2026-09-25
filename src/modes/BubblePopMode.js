@@ -24,6 +24,14 @@ export class BubblePopMode {
       star: {
         name: 'きらきらぼし ⭐',
         symbols: ['⭐', '🌟', '✨', '💫', '🌙']
+      },
+      umi: {
+        name: 'うみ 🐟',
+        symbols: ['🐟', '🐠', '🐡', '🐙', '🐬', '🐳', '🦀']
+      },
+      abc: {
+        name: 'ABCのうた 🔤',
+        symbols: ['🅰️', '🅱️', '🔤', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
       }
     };
     this.currentSongKey = 'tulip';
@@ -35,8 +43,8 @@ export class BubblePopMode {
     this.height = height;
     this.soundSynth = soundSynth;
 
-    // Randomly select between Tulip (Flower) and Star song
-    const songKeys = ['tulip', 'star'];
+    // Randomly select between Tulip, Star, Umi, and ABC song
+    const songKeys = Object.keys(this.songs);
     this.currentSongKey = songKeys[Math.floor(Math.random() * songKeys.length)];
     this.symbols = this.songs[this.currentSongKey].symbols;
 
@@ -94,7 +102,9 @@ export class BubblePopMode {
   }
 
   switchSong() {
-    this.currentSongKey = this.currentSongKey === 'tulip' ? 'star' : 'tulip';
+    const songKeys = Object.keys(this.songs);
+    const currIdx = songKeys.indexOf(this.currentSongKey);
+    this.currentSongKey = songKeys[(currIdx + 1) % songKeys.length];
     this.symbols = this.songs[this.currentSongKey].symbols;
     if (this.soundSynth && this.soundSynth.setNurserySong) {
       this.soundSynth.setNurserySong(this.currentSongKey);

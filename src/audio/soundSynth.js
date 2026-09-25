@@ -343,6 +343,35 @@ class SoundSynthesizer {
     });
   }
 
+  /**
+   * Speak Hiragana and Example Word using Web Speech API ("い！ いちご！")
+   */
+  speakWord(char, word) {
+    if (this.isMuted) return;
+    if (!('speechSynthesis' in window)) return;
+
+    try {
+      window.speechSynthesis.cancel(); // cancel any active speech
+
+      const text = `${char}！ ${word}！`;
+      const uttr = new SpeechSynthesisUtterance(text);
+      uttr.lang = 'ja-JP';
+      uttr.rate = 0.82; // slightly slower for toddlers
+      uttr.pitch = 1.25; // cute, friendly higher pitch
+
+      // Attempt to load Japanese voice
+      const voices = window.speechSynthesis.getVoices();
+      const jaVoice = voices.find(v => v.lang && (v.lang.includes('ja') || v.lang.includes('JP')));
+      if (jaVoice) {
+        uttr.voice = jaVoice;
+      }
+
+      window.speechSynthesis.speak(uttr);
+    } catch (err) {
+      console.warn('Web Speech API failed:', err);
+    }
+  }
+
   stopLullaby() {
     if (this.lullabyTimer) {
       clearTimeout(this.lullabyTimer);

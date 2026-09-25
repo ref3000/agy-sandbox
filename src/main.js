@@ -8,6 +8,7 @@ import { BubblePopMode } from './modes/BubblePopMode.js';
 import { PeekABooMode } from './modes/PeekABooMode.js';
 import { RattleMode } from './modes/RattleMode.js';
 import { LullabyMode } from './modes/LullabyMode.js';
+import { HiraganaTracingMode } from './modes/HiraganaTracingMode.js';
 
 class BabyJoyApp {
   constructor() {
@@ -29,7 +30,8 @@ class BabyJoyApp {
       bubble: new BubblePopMode(),
       peekaboo: new PeekABooMode(),
       rattle: new RattleMode(),
-      lullaby: new LullabyMode()
+      lullaby: new LullabyMode(),
+      tracing: new HiraganaTracingMode()
     };
 
     this.bindDOMEvents();

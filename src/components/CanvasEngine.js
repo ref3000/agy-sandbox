@@ -10,12 +10,12 @@ export class CanvasEngine {
 
     this.width = 0;
     this.height = 0;
-    // Cap DPR at 1.25 to prevent 4K/5K canvas resolution performance drops on iPad Retina
     this.dpr = Math.min(window.devicePixelRatio || 1, 1.25);
 
     this.particles = [];
     this.ripples = [];
     this.activeMode = null;
+    this.isDragging = false;
 
     this.colors = ['#FF6584', '#FF9F1C', '#FFD166', '#06D6A0', '#118AB2', '#A855F7', '#38BDF8'];
 
@@ -56,9 +56,9 @@ export class CanvasEngine {
   bindEvents() {
     let isTouchDevice = false;
 
-    // Handle touch start exclusively via changedTouches (prevents double-firing on iOS)
     const handleTouchStart = (e) => {
       isTouchDevice = true;
+      this.isDragging = true;
       e.preventDefault();
       
       const rect = this.canvas.getBoundingClientRect();
@@ -72,35 +72,77 @@ export class CanvasEngine {
       }
     };
 
-    // Fallback for desktop mouse clicking
+    const handleTouchMove = (e) => {
+      if (!this.isDragging) return;
+      e.preventDefault();
+      const rect = this.canvas.getBoundingClientRect();
+      const touches = e.touches ? Array.from(e.touches) : [];
+      if (touches.length > 0) {
+        const touch = touches[0];
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        if (this.activeMode && this.activeMode.onTouchMove) {
+          this.activeMode.onTouchMove(x, y);
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      this.isDragging = false;
+      if (this.activeMode && this.activeMode.onTouchEnd) {
+        this.activeMode.onTouchEnd();
+      }
+    };
+
     const handleMouseDown = (e) => {
       if (isTouchDevice) return;
+      this.isDragging = true;
       const rect = this.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       this.handleSingleTouch(x, y, 0);
     };
 
+    const handleMouseMove = (e) => {
+      if (isTouchDevice || !this.isDragging) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      if (this.activeMode && this.activeMode.onTouchMove) {
+        this.activeMode.onTouchMove(x, y);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isTouchDevice) return;
+      this.isDragging = false;
+      if (this.activeMode && this.activeMode.onTouchEnd) {
+        this.activeMode.onTouchEnd();
+      }
+    };
+
     this.canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    this.canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    this.canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    this.canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
     this.canvas.addEventListener('mousedown', handleMouseDown);
+    this.canvas.addEventListener('mousemove', handleMouseMove);
+    this.canvas.addEventListener('mouseup', handleMouseUp);
   }
 
   handleSingleTouch(x, y, index) {
-    // Spawn touch burst
     this.spawnTouchBurst(x, y);
 
-    // Sound feedback
     const pitchIdx = Math.floor((x / Math.max(1, this.width)) * 11);
     this.soundSynth.playTouchTone(pitchIdx);
 
-    // Notify active mode
     if (this.activeMode && this.activeMode.onTouch) {
       this.activeMode.onTouch(x, y, index);
     }
   }
 
   spawnTouchBurst(x, y) {
-    // Limit ripples to max 8
     if (this.ripples.length > 8) {
       this.ripples.shift();
     }
@@ -113,12 +155,11 @@ export class CanvasEngine {
       alpha: 1
     });
 
-    // Limit active particles on screen to max 25 total
     if (this.particles.length > 25) {
       this.particles.splice(0, this.particles.length - 20);
     }
 
-    const particleCount = 6 + Math.floor(Math.random() * 4); // 6-9 particles per touch
+    const particleCount = 6 + Math.floor(Math.random() * 4);
     for (let i = 0; i < particleCount; i++) {
       const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.4;
       const speed = 2.5 + Math.random() * 4.5;
@@ -138,13 +179,11 @@ export class CanvasEngine {
     const loop = () => {
       this.ctx.clearRect(0, 0, this.width, this.height);
 
-      // Render Active Mode
       if (this.activeMode && this.activeMode.render) {
         this.activeMode.update(this.width, this.height);
         this.activeMode.render(this.ctx, this.width, this.height);
       }
 
-      // Update & Render Ripples
       for (let i = this.ripples.length - 1; i >= 0; i--) {
         const r = this.ripples[i];
         r.radius += (r.maxRadius - r.radius) * 0.15;
@@ -163,7 +202,6 @@ export class CanvasEngine {
         this.ctx.stroke();
       }
 
-      // Update & Render Touch Particles (Fast vector circles)
       for (let i = this.particles.length - 1; i >= 0; i--) {
         const p = this.particles[i];
         p.x += p.vx;

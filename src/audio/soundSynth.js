@@ -289,6 +289,60 @@ class SoundSynthesizer {
     osc.stop(now + 1.25);
   }
 
+  /**
+   * Play stroke success chime ("ぴんぽん！")
+   */
+  playStrokeSuccess() {
+    if (this.isMuted || !this.ctx) return;
+
+    const notes = [523.25, 659.25]; // C5 -> E5
+    notes.forEach((freq, idx) => {
+      const now = this.ctx.currentTime + idx * 0.1;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.3, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.38);
+    });
+  }
+
+  /**
+   * Play letter completed fanfare ("できたー！")
+   */
+  playCompleteFanfare() {
+    if (this.isMuted || !this.ctx) return;
+
+    const fanfare = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    fanfare.forEach((freq, idx) => {
+      const now = this.ctx.currentTime + idx * 0.12;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.35, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.85);
+    });
+  }
+
   stopLullaby() {
     if (this.lullabyTimer) {
       clearTimeout(this.lullabyTimer);

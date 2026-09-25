@@ -334,12 +334,22 @@ export class HiraganaTracingMode {
     ctx.setLineDash([]);
     ctx.restore();
 
-    // 2. Render Header Banner (e.g. 「あ」- あひる 🐥)
-    ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#1E293B';
-    ctx.fillText(`${currentChar.char} - ${currentChar.word} ${currentChar.icon}`, this.width / 2, this.boxY - 35);
+    // 2. Render Header Banner (e.g. 「あ」- あひる 🐥 OR 「できたね！👏✨」 when completed)
+    ctx.save();
+    if (this.isCompleted) {
+      ctx.font = '900 36px "Zen Maru Gothic", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = this.currentColor;
+      ctx.fillText('できたね！👏✨', this.width / 2, this.boxY - 35);
+    } else {
+      ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#1E293B';
+      ctx.fillText(`${currentChar.char} - ${currentChar.word} ${currentChar.icon}`, this.width / 2, this.boxY - 35);
+    }
+    ctx.restore();
 
     // 3. Render Base Font Silhouette Template
     ctx.save();
@@ -440,16 +450,6 @@ export class HiraganaTracingMode {
     ctx.fillText('🔄 もういちど', resetBtn.x, resetBtn.y);
 
     // 8. Celebration Screen on Completion
-    if (this.isCompleted) {
-      ctx.save();
-      ctx.font = '900 44px "Zen Maru Gothic", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = this.currentColor;
-      ctx.fillText('できたね！👏✨', this.width / 2, this.boxY + this.boxSize / 2);
-      ctx.restore();
-    }
-
     // Celebration particles
     for (let i = 0; i < this.celebrationParticles.length; i++) {
       const p = this.celebrationParticles[i];

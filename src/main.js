@@ -78,15 +78,6 @@ class BabyJoyApp {
       });
     });
 
-    // Sound Mute Toggle Button
-    const soundBtn = document.getElementById('sound-toggle-btn');
-    const soundIcon = document.getElementById('sound-icon');
-    soundBtn.addEventListener('click', () => {
-      const isMuted = soundSynth.toggleMute();
-      soundIcon.textContent = isMuted ? '🔇' : '🔊';
-      this.showToast(isMuted ? 'ミュート中 🔇' : 'おとをオンにしました 🔊');
-    });
-
     // Parental Lock Button (3 second long press)
     const lockBtn = document.getElementById('parent-lock-btn');
     const lockIcon = document.getElementById('lock-icon');

@@ -3,7 +3,7 @@
    ========================================================================== */
 
 // Auto-import any images dropped in /public/zukan/ using Vite glob
-const globImages = import.meta.glob('/public/zukan/*.{png,jpg,jpeg,webp,svg}', { eager: true });
+const globImages = import.meta.glob('/public/zukan/*.{png,jpg,jpeg,webp,svg,PNG,JPG,JPEG,WEBP,SVG}', { eager: true, as: 'url' });
 
 export class ZukanMode {
   constructor() {
@@ -33,61 +33,60 @@ export class ZukanMode {
     const loadedCards = [];
     const loadedNames = new Set();
 
-    // 1. Scan user uploaded images from /public/zukan/
+    // 1. Scan user uploaded images from /public/zukan/ via Vite glob
     Object.keys(globImages).forEach(path => {
-      // Path example: "/public/zukan/りんご.png"
+      // Path example: "/public/zukan/りんご.png"
       const filename = path.split('/').pop();
-      const name = decodeURIComponent(filename.replace(/\.[^/.]+$/, ''));
-      const url = globImages[path].default || path.replace('/public', '');
+      const rawName = filename.replace(/\.[^/.]+$/, '');
+      const name = rawName.normalize('NFC'); // Normalize NFD Japanese characters
+
+      const globUrl = globImages[path];
+      const url = typeof globUrl === 'string' ? globUrl : (globUrl && globUrl.default ? globUrl.default : `./zukan/${encodeURIComponent(filename)}`);
 
       const img = new Image();
       img.src = url;
+
+      // Fallback onerror retry
+      img.onerror = () => {
+        if (!img.dataset.retried) {
+          img.dataset.retried = '1';
+          img.src = `./zukan/${encodeURIComponent(filename)}`;
+        } else if (!img.dataset.retried2) {
+          img.dataset.retried2 = '1';
+          img.src = `/zukan/${filename}`;
+        }
+      };
+
       this.imageMap[name] = img;
 
       loadedCards.push({
         id: name,
         name: name,
-        emoji: '🖼️',
         color: this.getColorForName(name),
-        hasUserImage: true,
         imgObj: img
       });
 
       loadedNames.add(name);
     });
 
-    // 2. Default fallback items to ensure rich infinite loop (if < 8 user images)
-    const defaultList = [
-      { name: 'りんご', emoji: '🍎', color: '#FF4757' },
-      { name: 'いぬ', emoji: '🐶', color: '#FF9F1C' },
-      { name: 'ねこ', emoji: '🐱', color: '#FF6584' },
-      { name: 'くるま', emoji: '🚗', color: '#38BDF8' },
-      { name: 'でんしゃ', emoji: '🚃', color: '#2ED573' },
-      { name: 'ばなな', emoji: '🍌', color: '#FFD166' },
-      { name: 'うさぎ', emoji: '🐰', color: '#A855F7' },
-      { name: 'ひこうき', emoji: '✈️', color: '#118AB2' },
-      { name: 'おにぎり', emoji: '🍙', color: '#1A1E36' },
-      { name: 'パンダ', emoji: '🐼', color: '#FF85A2' },
-      { name: 'いちご', emoji: '🍓', color: '#FF477E' },
-      { name: 'バス', emoji: '🚌', color: '#FFC72C' }
-    ];
-
-    defaultList.forEach(item => {
-      if (!loadedNames.has(item.name)) {
-        // Try fallback image path e.g. /zukan/りんご.png
-        const imgPath = `/zukan/${item.name}.png`;
+    // 2. Also check common image names in public/zukan/ in case glob missed them
+    const checkNames = ['りんご', 'いぬ', 'ねこ', 'くるま', 'でんしゃ', 'ばなな', 'うさぎ', 'ひこうき', 'おにぎり', 'パンダ', 'いちご', 'バス'];
+    checkNames.forEach(itemName => {
+      const name = itemName.normalize('NFC');
+      if (!loadedNames.has(name)) {
         const img = new Image();
-        img.src = imgPath;
-        this.imageMap[item.name] = img;
-
-        loadedCards.push({
-          id: item.name,
-          name: item.name,
-          emoji: item.emoji,
-          color: item.color,
-          hasUserImage: false,
-          imgObj: img
-        });
+        img.src = `./zukan/${encodeURIComponent(name)}.png`;
+        img.onload = () => {
+          if (!loadedNames.has(name) && img.naturalWidth > 0) {
+            loadedNames.add(name);
+            this.cards.push({
+              id: name,
+              name: name,
+              color: this.getColorForName(name),
+              imgObj: img
+            });
+          }
+        };
       }
     });
 

@@ -520,26 +520,51 @@ class SoundSynthesizer {
   }
 
   /**
-   * Speak Hiragana and Example Word using Web Speech API ("い！ いちご！")
+   * Speak Hiragana character and example word using custom WAV files or Web Speech API fallback
    */
   speakWord(char, word) {
     if (this.isMuted) return;
-    if (!('speechSynthesis' in window)) return;
+
+    // 1. Try playing custom WAV file from public/hiragana/ (e.g. あ.wav)
+    const wavUrl = `./hiragana/${encodeURIComponent(char)}.wav`;
+    const audio = new Audio();
+    let played = false;
+
+    audio.oncanplaythrough = () => {
+      if (!played) {
+        played = true;
+        audio.play().catch(() => {
+          this.speakText(`${char}！ ${word}！`);
+        });
+      }
+    };
+
+    audio.onerror = () => {
+      if (!played) {
+        played = true;
+        this.speakText(`${char}！ ${word}！`);
+      }
+    };
+
+    audio.src = wavUrl;
+    audio.load();
+  }
+
+  speakText(text) {
+    if (this.isMuted || !('speechSynthesis' in window)) return;
 
     try {
-      window.speechSynthesis.cancel(); // cancel any active speech
+      window.speechSynthesis.cancel();
 
       if (window.speechSynthesis.paused) {
         window.speechSynthesis.resume();
       }
 
-      const text = `${char}！ ${word}！`;
       const uttr = new SpeechSynthesisUtterance(text);
       uttr.lang = 'ja-JP';
-      uttr.rate = 0.80; // slightly slower for toddlers
-      uttr.pitch = 1.25; // cute, friendly higher pitch
+      uttr.rate = 0.80;
+      uttr.pitch = 1.25;
 
-      // CRITICAL FOR iOS SAFARI: Keep a reference on instance so GC doesn't destroy utterance
       this.currentUtterance = uttr;
 
       const voices = window.speechSynthesis.getVoices();
@@ -548,17 +573,12 @@ class SoundSynthesizer {
         uttr.voice = jaVoice;
       }
 
-      uttr.onend = () => {
-        this.currentUtterance = null;
-      };
-      uttr.onerror = (e) => {
-        console.warn('Utterance error:', e);
-        this.currentUtterance = null;
-      };
+      uttr.onend = () => { this.currentUtterance = null; };
+      uttr.onerror = () => { this.currentUtterance = null; };
 
       window.speechSynthesis.speak(uttr);
     } catch (err) {
-      console.warn('Web Speech API failed:', err);
+      console.warn('SpeechSynthesis failed:', err);
     }
   }
 

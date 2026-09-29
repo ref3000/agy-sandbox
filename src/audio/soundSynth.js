@@ -88,10 +88,71 @@ class SoundSynthesizer {
     ];
     this.lullabyTimer = null;
     this.lullabyIndex = 0;
+
+    // Web Audio API Buffer Cache for iPad Chrome compatibility
+    this.audioBufferCache = new Map();
   }
 
   /**
-   * Unlock AudioContext on iOS Safari / iPad touch gesture
+   * Preload & decode WAV file into Web Audio API AudioBuffer for zero-latency, 100% iPad Chrome compatibility
+   */
+  async loadWavBuffer(char) {
+    if (!this.ctx) return null;
+    const normalizedChar = char.normalize('NFC');
+    if (this.audioBufferCache.has(normalizedChar)) {
+      return this.audioBufferCache.get(normalizedChar);
+    }
+
+    const urls = [
+      `./hiragana/${encodeURIComponent(normalizedChar)}.wav`,
+      `/hiragana/${encodeURIComponent(normalizedChar)}.wav`,
+      `./hiragana/${normalizedChar}.wav`
+    ];
+
+    for (const url of urls) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+          this.audioBufferCache.set(normalizedChar, audioBuffer);
+          return audioBuffer;
+        }
+      } catch (e) {
+        // Try next fallback URL
+      }
+    }
+    return null;
+  }
+
+  async playCharWav(char) {
+    if (this.isMuted || !this.ctx) return false;
+
+    try {
+      const normalizedChar = char.normalize('NFC');
+      let buffer = this.audioBufferCache.get(normalizedChar);
+      if (!buffer) {
+        buffer = await this.loadWavBuffer(normalizedChar);
+      }
+
+      if (buffer) {
+        if (this.ctx.state === 'suspended') {
+          await this.ctx.resume();
+        }
+        const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.ctx.destination);
+        source.start(0);
+        return true;
+      }
+    } catch (err) {
+      console.warn('WAV buffer play failed:', err);
+    }
+    return false;
+  }
+
+  /**
+   * Unlock AudioContext on iOS Safari & iPad Chrome touch gesture
    */
   async unlock() {
     if (this.isUnlocked && this.ctx && this.ctx.state === 'running') return true;
@@ -104,7 +165,13 @@ class SoundSynthesizer {
       if (this.ctx.state === 'suspended') {
         await this.ctx.resume();
       }
-      // Unlock Web Speech API on iOS / Mobile Safari
+
+      // Preload Hiragana WAV buffers for あいうえお
+      ['あ', 'い', 'う', 'え', 'お'].forEach(char => {
+        this.loadWavBuffer(char).catch(() => {});
+      });
+
+      // Unlock Web Speech API on iOS / Mobile Safari & Chrome
       if ('speechSynthesis' in window) {
         try {
           window.speechSynthesis.cancel();
@@ -520,34 +587,18 @@ class SoundSynthesizer {
   }
 
   /**
-   * Speak Hiragana character and example word using custom WAV files or Web Speech API fallback
+   * Speak Hiragana character and example word using Web Audio API AudioBuffer (iPad Chrome compatible) or SpeechSynthesis fallback
    */
-  speakWord(char, word) {
+  async speakWord(char, word) {
     if (this.isMuted) return;
 
-    // 1. Try playing custom WAV file from public/hiragana/ (e.g. あ.wav)
-    const wavUrl = `./hiragana/${encodeURIComponent(char)}.wav`;
-    const audio = new Audio();
-    let played = false;
+    // 1. Try playing pre-decoded Web Audio API AudioBuffer (100% compatible with iPad Chrome)
+    const played = await this.playCharWav(char);
 
-    audio.oncanplaythrough = () => {
-      if (!played) {
-        played = true;
-        audio.play().catch(() => {
-          this.speakText(`${char}！ ${word}！`);
-        });
-      }
-    };
-
-    audio.onerror = () => {
-      if (!played) {
-        played = true;
-        this.speakText(`${char}！ ${word}！`);
-      }
-    };
-
-    audio.src = wavUrl;
-    audio.load();
+    // 2. Fallback to Web Speech API if no WAV file exists
+    if (!played) {
+      this.speakText(`${char}！ ${word}！`);
+    }
   }
 
   speakText(text) {

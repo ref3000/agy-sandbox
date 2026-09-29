@@ -14,12 +14,7 @@ export class HiraganaTracingMode {
       { char: 'い', word: 'いちご', icon: '🍓', startPts: [{ rx: 0.12, ry: 0.02, n: 1 }, { rx: 0.88, ry: 0.12, n: 2 }] },
       { char: 'う', word: 'うさぎ', icon: '🐰', startPts: [{ rx: 0.42, ry: 0.02, n: 1 }, { rx: 0.12, ry: 0.32, n: 2 }] },
       { char: 'え', word: 'えんぴつ', icon: '✏️', startPts: [{ rx: 0.42, ry: 0.02, n: 1 }, { rx: 0.10, ry: 0.35, n: 2 }] },
-      { char: 'お', word: 'おにぎり', icon: '🍙', startPts: [{ rx: 0.10, ry: 0.22, n: 1 }, { rx: 0.42, ry: 0.02, n: 2 }, { rx: 0.82, ry: 0.20, n: 3 }] },
-      { char: 'か', word: 'かめ', icon: '🐢', startPts: [{ rx: 0.16, ry: 0.22, n: 1 }, { rx: 0.46, ry: 0.06, n: 2 }, { rx: 0.68, ry: 0.22, n: 3 }] },
-      { char: 'き', word: 'きりん', icon: '🦒', startPts: [{ rx: 0.12, ry: 0.18, n: 1 }, { rx: 0.12, ry: 0.38, n: 2 }, { rx: 0.58, ry: 0.02, n: 3 }, { rx: 0.22, ry: 0.68, n: 4 }] },
-      { char: 'く', word: 'くま', icon: '🐻', startPts: [{ rx: 0.90, ry: 0.02, n: 1 }] },
-      { char: 'け', word: 'けーき', icon: '🎂', startPts: [{ rx: 0.08, ry: 0.02, n: 1 }, { rx: 0.46, ry: 0.28, n: 2 }, { rx: 0.82, ry: 0.02, n: 3 }] },
-      { char: 'こ', word: 'らいおん', icon: '🦁', startPts: [{ rx: 0.12, ry: 0.04, n: 1 }, { rx: 0.12, ry: 0.88, n: 2 }] }
+      { char: 'お', word: 'おにぎり', icon: '🍙', startPts: [{ rx: 0.10, ry: 0.22, n: 1 }, { rx: 0.42, ry: 0.02, n: 2 }, { rx: 0.82, ry: 0.20, n: 3 }] }
     ];
 
     this.charIndex = 0;

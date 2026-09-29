@@ -5,9 +5,9 @@
 import { soundSynth } from './audio/soundSynth.js';
 import { CanvasEngine } from './components/CanvasEngine.js';
 import { BubblePopMode } from './modes/BubblePopMode.js';
-import { EhonMode } from './modes/EhonMode.js';
-import { PrefecturePuzzleMode } from './modes/PrefecturePuzzleMode.js';
 import { HiraganaTracingMode } from './modes/HiraganaTracingMode.js';
+import { EhonMode } from './modes/EhonMode.js';
+import { ZukanMode } from './modes/ZukanMode.js';
 
 class BabyJoyApp {
   constructor() {
@@ -29,7 +29,7 @@ class BabyJoyApp {
       bubble: new BubblePopMode(),
       tracing: new HiraganaTracingMode(),
       ehon: new EhonMode(),
-      prefecture: new PrefecturePuzzleMode()
+      zukan: new ZukanMode()
     };
 
     this.bindDOMEvents();

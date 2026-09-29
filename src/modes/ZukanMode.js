@@ -1,6 +1,9 @@
 /* ==========================================================================
-   あそびモード: ずかん (Picture Encyclopedia & Card Zoom Pop-up)
+   あそびモード: ずかん (Infinite Horizontal Looping Picture Card Encyclopedia)
    ========================================================================== */
+
+// Auto-import any images dropped in /public/zukan/ using Vite glob
+const globImages = import.meta.glob('/public/zukan/*.{png,jpg,jpeg,webp,svg}', { eager: true });
 
 export class ZukanMode {
   constructor() {
@@ -8,78 +11,96 @@ export class ZukanMode {
     this.width = 0;
     this.height = 0;
 
-    this.activeCard = null; // Card currently zoomed in center
-    this.zoomProgress = 0;   // 0 to 1 smooth zoom animation scale
+    this.activeCard = null;
+    this.zoomProgress = 0;
     this.effects = [];
-    this.currentCategoryIndex = 0;
 
-    // Categories of Cards (8 items per category, visible on 1 screen)
-    this.categories = [
-      {
-        id: 'animals',
-        title: 'どうぶつ',
-        icon: '🐶',
-        bgColor: '#FFF5F7',
-        cards: [
-          { id: 'dog', name: 'いぬ', emoji: '🐶', color: '#FF9F1C', imageSrc: '/zukan/dog.png' },
-          { id: 'cat', name: 'ねこ', emoji: '🐱', color: '#FF6584', imageSrc: '/zukan/cat.png' },
-          { id: 'rabbit', name: 'うさぎ', emoji: '🐰', color: '#A855F7', imageSrc: '/zukan/rabbit.png' },
-          { id: 'bear', name: 'くま', emoji: '🐻', color: '#FFD166', imageSrc: '/zukan/bear.png' },
-          { id: 'panda', name: 'パンダ', emoji: '🐼', color: '#1A1E36', imageSrc: '/zukan/panda.png' },
-          { id: 'chick', name: 'ひよこ', emoji: '🐥', color: '#FFC72C', imageSrc: '/zukan/chick.png' },
-          { id: 'lion', name: 'らいおん', emoji: '🦁', color: '#FF85A2', imageSrc: '/zukan/lion.png' },
-          { id: 'elephant', name: 'ぞう', emoji: '🐘', color: '#38BDF8', imageSrc: '/zukan/elephant.png' }
-        ]
-      },
-      {
-        id: 'vehicles',
-        title: 'のりもの',
-        icon: '🚗',
-        bgColor: '#E0F2FE',
-        cards: [
-          { id: 'car', name: 'くるま', emoji: '🚗', color: '#FF4757', imageSrc: '/zukan/car.png' },
-          { id: 'train', name: 'でんしゃ', emoji: '🚃', color: '#2ED573', imageSrc: '/zukan/train.png' },
-          { id: 'shinkansen', name: 'しんかんせん', emoji: '🚅', color: '#38BDF8', imageSrc: '/zukan/shinkansen.png' },
-          { id: 'bus', name: 'ばす', emoji: '🚌', color: '#FFD166', imageSrc: '/zukan/bus.png' },
-          { id: 'airplane', name: 'ひこうき', emoji: '✈️', color: '#A855F7', imageSrc: '/zukan/airplane.png' },
-          { id: 'ship', name: 'ふね', emoji: '🚢', color: '#118AB2', imageSrc: '/zukan/ship.png' },
-          { id: 'fire_engine', name: 'しょうぼうしゃ', emoji: '🚒', color: '#FF477E', imageSrc: '/zukan/fire_engine.png' },
-          { id: 'police_car', name: 'パトカー', emoji: '🚓', color: '#1A1E36', imageSrc: '/zukan/police_car.png' }
-        ]
-      },
-      {
-        id: 'foods',
-        title: 'たべもの',
-        icon: '🍎',
-        bgColor: '#FFFBEB',
-        cards: [
-          { id: 'apple', name: 'りんご', emoji: '🍎', color: '#FF4757', imageSrc: '/zukan/apple.png' },
-          { id: 'banana', name: 'ばなな', emoji: '🍌', color: '#FFD166', imageSrc: '/zukan/banana.png' },
-          { id: 'strawberry', name: 'いちご', emoji: '🍓', color: '#FF6584', imageSrc: '/zukan/strawberry.png' },
-          { id: 'onigiri', name: 'おにぎり', emoji: '🍙', color: '#1A1E36', imageSrc: '/zukan/onigiri.png' },
-          { id: 'bread', name: 'ぱん', emoji: '🍞', color: '#FF9F1C', imageSrc: '/zukan/bread.png' },
-          { id: 'cake', name: 'ケーキ', emoji: '🍰', color: '#FF85A2', imageSrc: '/zukan/cake.png' },
-          { id: 'icecream', name: 'あいす', emoji: '🍦', color: '#38BDF8', imageSrc: '/zukan/icecream.png' },
-          { id: 'juice', name: 'じゅーす', emoji: '🧃', color: '#2ED573', imageSrc: '/zukan/juice.png' }
-        ]
-      }
-    ];
+    this.scrollX = 0;
+    this.targetScrollX = 0;
+    this.velocityX = 0;
+    this.isDragging = false;
+    this.dragStartX = 0;
+    this.lastTouchX = 0;
+    this.dragDistance = 0;
 
-    // Cache image objects for user-provided images
+    this.cards = [];
     this.imageMap = {};
-    this.preloadImages();
+
+    this.loadCards();
   }
 
-  preloadImages() {
-    this.categories.forEach(cat => {
-      cat.cards.forEach(card => {
-        if (card.imageSrc) {
-          const img = new Image();
-          img.src = card.imageSrc;
-          this.imageMap[card.id] = img;
-        }
+  loadCards() {
+    const loadedCards = [];
+    const loadedNames = new Set();
+
+    // 1. Scan user uploaded images from /public/zukan/
+    Object.keys(globImages).forEach(path => {
+      // Path example: "/public/zukan/りんご.png"
+      const filename = path.split('/').pop();
+      const name = decodeURIComponent(filename.replace(/\.[^/.]+$/, ''));
+      const url = globImages[path].default || path.replace('/public', '');
+
+      const img = new Image();
+      img.src = url;
+      this.imageMap[name] = img;
+
+      loadedCards.push({
+        id: name,
+        name: name,
+        emoji: '🖼️',
+        color: this.getColorForName(name),
+        hasUserImage: true,
+        imgObj: img
       });
+
+      loadedNames.add(name);
     });
+
+    // 2. Default fallback items to ensure rich infinite loop (if < 8 user images)
+    const defaultList = [
+      { name: 'りんご', emoji: '🍎', color: '#FF4757' },
+      { name: 'いぬ', emoji: '🐶', color: '#FF9F1C' },
+      { name: 'ねこ', emoji: '🐱', color: '#FF6584' },
+      { name: 'くるま', emoji: '🚗', color: '#38BDF8' },
+      { name: 'でんしゃ', emoji: '🚃', color: '#2ED573' },
+      { name: 'ばなな', emoji: '🍌', color: '#FFD166' },
+      { name: 'うさぎ', emoji: '🐰', color: '#A855F7' },
+      { name: 'ひこうき', emoji: '✈️', color: '#118AB2' },
+      { name: 'おにぎり', emoji: '🍙', color: '#1A1E36' },
+      { name: 'パンダ', emoji: '🐼', color: '#FF85A2' },
+      { name: 'いちご', emoji: '🍓', color: '#FF477E' },
+      { name: 'バス', emoji: '🚌', color: '#FFC72C' }
+    ];
+
+    defaultList.forEach(item => {
+      if (!loadedNames.has(item.name)) {
+        // Try fallback image path e.g. /zukan/りんご.png
+        const imgPath = `/zukan/${item.name}.png`;
+        const img = new Image();
+        img.src = imgPath;
+        this.imageMap[item.name] = img;
+
+        loadedCards.push({
+          id: item.name,
+          name: item.name,
+          emoji: item.emoji,
+          color: item.color,
+          hasUserImage: false,
+          imgObj: img
+        });
+      }
+    });
+
+    this.cards = loadedCards;
+  }
+
+  getColorForName(name) {
+    const palette = ['#FF4757', '#FF9F1C', '#FFD166', '#2ED573', '#38BDF8', '#A855F7', '#FF6584', '#118AB2'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash += name.charCodeAt(i);
+    }
+    return palette[hash % palette.length];
   }
 
   init(width, height, soundSynth) {
@@ -89,6 +110,9 @@ export class ZukanMode {
 
     this.activeCard = null;
     this.zoomProgress = 0;
+    this.scrollX = 0;
+    this.targetScrollX = 0;
+    this.velocityX = 0;
     this.effects = [];
   }
 
@@ -98,33 +122,66 @@ export class ZukanMode {
   }
 
   onTouch(x, y) {
-    // If a card is currently zoomed in, tapping anywhere closes it
     if (this.activeCard) {
       if (this.soundSynth) this.soundSynth.playPop();
       this.closeZoom();
       return;
     }
 
-    // Check Category Switcher Pill at Top Center
-    const pill = { x: this.width / 2, y: 70, w: 220, h: 40 };
-    if (Math.abs(x - pill.x) < pill.w / 2 && Math.abs(y - pill.y) < pill.h / 2) {
-      this.switchCategory();
+    this.isDragging = true;
+    this.dragStartX = x;
+    this.lastTouchX = x;
+    this.dragDistance = 0;
+    this.velocityX = 0;
+
+    // Check Left Arrow Click (Scroll Left)
+    const leftBtn = { x: 32, y: this.height / 2, radius: 24 };
+    if (Math.hypot(x - leftBtn.x, y - leftBtn.y) < leftBtn.radius) {
+      this.scrollByColumn(1);
+      this.isDragging = false;
       return;
     }
 
-    // Check Grid Card Click
-    const gridCards = this.getGridPositions();
-    for (let i = 0; i < gridCards.length; i++) {
-      const c = gridCards[i];
-      if (x >= c.x && x <= c.x + c.w && y >= c.y && y <= c.y + c.h) {
-        this.zoomCard(c.card);
-        break;
+    // Check Right Arrow Click (Scroll Right)
+    const rightBtn = { x: this.width - 32, y: this.height / 2, radius: 24 };
+    if (Math.hypot(x - rightBtn.x, y - rightBtn.y) < rightBtn.radius) {
+      this.scrollByColumn(-1);
+      this.isDragging = false;
+      return;
+    }
+  }
+
+  onTouchMove(x, y) {
+    if (!this.isDragging) return;
+
+    const dx = x - this.lastTouchX;
+    this.scrollX += dx;
+    this.velocityX = dx;
+    this.dragDistance += Math.abs(dx);
+    this.lastTouchX = x;
+  }
+
+  onTouchEnd(x, y) {
+    if (!this.isDragging) return;
+    this.isDragging = false;
+
+    // If tap without drag, check card click
+    if (this.dragDistance < 10) {
+      const visibleCards = this.getVisibleCardLayout();
+      for (let i = 0; i < visibleCards.length; i++) {
+        const item = visibleCards[i];
+        if (x >= item.x && x <= item.x + item.w && y >= item.y && y <= item.y + item.h) {
+          this.zoomCard(item.card);
+          break;
+        }
       }
     }
   }
 
-  switchCategory() {
-    this.currentCategoryIndex = (this.currentCategoryIndex + 1) % this.categories.length;
+  scrollByColumn(dir) {
+    const layout = this.getCardDimensions();
+    const step = layout.cardW + layout.gapX;
+    this.targetScrollX = this.scrollX + dir * step;
     if (this.soundSynth) this.soundSynth.playPop();
   }
 
@@ -170,21 +227,20 @@ export class ZukanMode {
     }
   }
 
-  getGridPositions() {
-    const category = this.categories[this.currentCategoryIndex];
-    const cards = category.cards; // 8 items
-
-    const topOffset = 110;
-    const bottomOffset = 20;
-    const sideMargin = 30;
+  getCardDimensions() {
+    const topOffset = 70;
+    const bottomOffset = 25;
+    const sideMargin = 60; // Leave space for side arrows
 
     const availableW = this.width - sideMargin * 2;
     const availableH = this.height - topOffset - bottomOffset;
 
-    // 4 columns x 2 rows (or 2 columns x 4 rows on narrow screen)
+    // 6 Cards Visible on 1 Screen:
+    // Landscape: 3 columns x 2 rows = 6 visible
+    // Portrait: 2 columns x 3 rows = 6 visible
     const isPortrait = this.width < this.height;
-    const cols = isPortrait ? 2 : 4;
-    const rows = isPortrait ? 4 : 2;
+    const cols = isPortrait ? 2 : 3;
+    const rows = isPortrait ? 3 : 2;
 
     const gapX = 16;
     const gapY = 16;
@@ -192,25 +248,67 @@ export class ZukanMode {
     const cardW = (availableW - (cols - 1) * gapX) / cols;
     const cardH = (availableH - (rows - 1) * gapY) / rows;
 
-    const grid = [];
-    cards.forEach((card, idx) => {
-      const col = idx % cols;
-      const row = Math.floor(idx / cols);
+    return { cols, rows, cardW, cardH, gapX, gapY, sideMargin, topOffset, isPortrait };
+  }
 
-      const x = sideMargin + col * (cardW + gapX);
-      const y = topOffset + row * (cardH + gapY);
+  getVisibleCardLayout() {
+    const dim = this.getCardDimensions();
+    const totalCards = this.cards.length;
+    if (totalCards === 0) return [];
 
-      grid.push({ card, x, y, w: cardW, h: cardH });
+    const numCols = Math.ceil(totalCards / dim.rows);
+    const colStep = dim.cardW + dim.gapX;
+    const totalW = numCols * colStep;
+
+    const visibleItems = [];
+
+    // Loop through all items and calculate wrapped horizontal position
+    this.cards.forEach((card, idx) => {
+      const col = Math.floor(idx / dim.rows);
+      const row = idx % dim.rows;
+
+      const rawX = col * colStep + this.scrollX;
+      // Modulo wrap for infinite horizontal loop
+      let wrappedX = ((rawX % totalW) + totalW) % totalW;
+
+      // Keep cards continuously visible across screen boundaries
+      if (wrappedX > totalW - colStep * 2) {
+        wrappedX -= totalW;
+      }
+
+      const screenX = dim.sideMargin + wrappedX;
+      const screenY = dim.topOffset + row * (dim.cardH + dim.gapY);
+
+      if (screenX + dim.cardW >= -50 && screenX <= this.width + 50) {
+        visibleItems.push({
+          card,
+          x: screenX,
+          y: screenY,
+          w: dim.cardW,
+          h: dim.cardH
+        });
+      }
     });
 
-    return grid;
+    return visibleItems;
   }
 
   update(width, height) {
     this.width = width;
     this.height = height;
 
-    // Smooth spring zoom animation for active card
+    // Smooth inertia / momentum scroll
+    if (!this.isDragging) {
+      if (Math.abs(this.targetScrollX - this.scrollX) > 0.5) {
+        this.scrollX += (this.targetScrollX - this.scrollX) * 0.15;
+      } else if (Math.abs(this.velocityX) > 0.2) {
+        this.scrollX += this.velocityX;
+        this.velocityX *= 0.92;
+        this.targetScrollX = this.scrollX;
+      }
+    }
+
+    // Smooth zoom animation for popup modal
     if (this.activeCard && this.zoomProgress < 1) {
       this.zoomProgress += (1 - this.zoomProgress) * 0.22;
       if (this.zoomProgress > 0.99) this.zoomProgress = 1;
@@ -232,20 +330,28 @@ export class ZukanMode {
   render(ctx) {
     ctx.save();
 
-    const category = this.categories[this.currentCategoryIndex];
-
-    // Background Color
-    ctx.fillStyle = category.bgColor;
+    // Soft Cream Background
+    ctx.fillStyle = '#FFF9F2';
     ctx.fillRect(0, 0, this.width, this.height);
 
-    // Render Grid Cards (8 items on screen)
-    const grid = this.getGridPositions();
-    grid.forEach(item => {
+    // Subtle background pattern dots
+    ctx.fillStyle = '#FFEBD6';
+    for (let x = 20; x < this.width; x += 40) {
+      for (let y = 70; y < this.height; y += 40) {
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Render 6-Card Grid (Infinite Looping Horizontal Scroll)
+    const visibleLayout = this.getVisibleCardLayout();
+    visibleLayout.forEach(item => {
       this.renderCard(ctx, item.card, item.x, item.y, item.w, item.h, false);
     });
 
-    // Top Category Pill Badge
-    this.renderTopPill(ctx, category);
+    // Render Left & Right Infinite Scroll Arrow Buttons
+    this.renderSideArrows(ctx);
 
     // Zoomed Pop-up Modal Overlay
     if (this.activeCard) {
@@ -285,32 +391,32 @@ export class ZukanMode {
     ctx.shadowColor = 'transparent';
 
     // Top Banner Color Bar on Card
-    const headerH = Math.min(28, h * 0.22);
+    const headerH = Math.min(26, h * 0.20);
     ctx.beginPath();
     ctx.roundRect(x, y, w, headerH, [20, 20, 0, 0]);
     ctx.fillStyle = card.color;
     ctx.fill();
 
-    // Check if user image is loaded, otherwise draw vector emoji
-    const img = this.imageMap[card.id];
-    const hasUserImage = img && img.complete && img.naturalWidth > 0;
+    // Image / Emoji rendering
+    const img = card.imgObj || this.imageMap[card.name];
+    const hasImage = img && img.complete && img.naturalWidth > 0;
 
     const iconY = y + headerH + (h - headerH) * 0.42;
 
-    if (hasUserImage) {
-      const imgSize = Math.min(w * 0.65, (h - headerH) * 0.6);
+    if (hasImage) {
+      const imgSize = Math.min(w * 0.70, (h - headerH) * 0.62);
       ctx.drawImage(img, x + w / 2 - imgSize / 2, iconY - imgSize / 2, imgSize, imgSize);
     } else {
-      // High-contrast Cute Emoji Icon
-      const emojiSize = Math.min(w * 0.42, (h - headerH) * 0.48);
+      // Cute Emoji Icon
+      const emojiSize = Math.min(w * 0.45, (h - headerH) * 0.50);
       ctx.font = `${emojiSize}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(card.emoji, x + w / 2, iconY);
     }
 
-    // Card Name Text at Bottom
-    const textY = y + h - Math.max(16, h * 0.16);
+    // Card Base Name Text at Bottom (File base name without extension)
+    const textY = y + h - Math.max(16, h * 0.15);
     ctx.font = `700 ${Math.max(14, Math.floor(h * 0.14))}px "Zen Maru Gothic", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -320,26 +426,43 @@ export class ZukanMode {
     ctx.restore();
   }
 
-  renderTopPill(ctx, category) {
-    const pillW = 230;
-    const pillH = 40;
-    const pillX = this.width / 2 - pillW / 2;
-    const pillY = 65;
+  renderSideArrows(ctx) {
+    const centerY = this.height / 2;
 
+    // Left Arrow Button (◀)
+    const leftX = 32;
     ctx.save();
     ctx.beginPath();
-    ctx.roundRect(pillX, pillY, pillW, pillH, 20);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+    ctx.arc(leftX, centerY, 22, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.fill();
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2;
     ctx.strokeStyle = '#FF6584';
     ctx.stroke();
 
     ctx.font = '700 16px "Zen Maru Gothic", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#1E293B';
-    ctx.fillText(`🖼️ ${category.title} (${this.currentCategoryIndex + 1}/${this.categories.length}) 🔄`, this.width / 2, pillY + pillH / 2);
+    ctx.fillStyle = '#FF6584';
+    ctx.fillText('◀', leftX, centerY);
+    ctx.restore();
+
+    // Right Arrow Button (▶)
+    const rightX = this.width - 32;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(rightX, centerY, 22, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#FF6584';
+    ctx.stroke();
+
+    ctx.font = '700 16px "Zen Maru Gothic", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#FF6584';
+    ctx.fillText('▶', rightX, centerY);
     ctx.restore();
   }
 
